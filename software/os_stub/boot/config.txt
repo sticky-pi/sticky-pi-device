@@ -1,0 +1,22 @@
+# See /boot/overlays/README for all available options
+
+initramfs initramfs-linux.img followkernel
+disable_splash=1
+gpu_mem=256
+start_file=start_x.elf
+fixup_file=fixup_x.dat
+
+
+# Disable bluetooth
+dtoverlay=pi3-disable-bt
+
+#Disable Wifi
+dtoverlay=pi3-disable-wifi
+boot_delay=0
+
+# rtc
+dtoverlay=i2c-rtc,ds1307
+
+#disable leds
+dtparam=act_led_trigger=none
+dtparam=act_led_activelow=on

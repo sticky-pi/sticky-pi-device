@@ -1,0 +1,10 @@
+[Unit]
+Description=Takes picts
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=600s
+
+[Install]
+WantedBy=timers.target
+

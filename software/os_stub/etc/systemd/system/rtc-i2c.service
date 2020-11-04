@@ -1,0 +1,23 @@
+[Unit]
+ConditionCapability=CAP_SYS_TIME
+ConditionVirtualization=!container
+DefaultDependencies=no
+Wants=dev-rtc_i2c.device
+After=dev-rtc_i2c.device
+Before=systemd-timesyncd.service ntpd.service chrony.service
+
+[Service]
+Type=oneshot
+CapabilityBoundingSet=CAP_SYS_TIME
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+DeviceAllow=/dev/rtc_i2c rw
+DevicePolicy=closed
+ExecStart=/bin/sh -c '/usr/bin/timedatectl set-time "$(/sbin/hwclock | cut -f 1 -d.)"'
+#ExecStart=/sbin/hwclock --rtc=/dev/rtc_i2c --hctosys
+ExecStartPost=/sbin/logger --tag rtc-i2c 'System clock set from i2c hardware clock'
+
+[Install]
+WantedBy=time-sync.target
+

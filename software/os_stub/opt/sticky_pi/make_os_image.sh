@@ -1,0 +1,1 @@
+../../../make_os_image.sh

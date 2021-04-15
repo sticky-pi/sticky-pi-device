@@ -38,8 +38,8 @@ ${NET_CONF}: .env
 	@echo "Connection=wireless" >>  $@
 	@echo "Security=wpa"  >> $@
 	@echo "IP=dhcp"  >> $@
-	@echo "ESSID='$SPI_WIFI_SSID'"  >> $@
-	@echo "Key='$SPI_WIFI_PASSWORD'" >> $@
+	@echo "ESSID='${SPI_WIFI_SSID}'"  >> $@
+	@echo "Key='${SPI_WIFI_PASSWORD}'" >> $@
 	@echo Made $@
 
 spi-${OS_IMG_NAME}: utils/emulate_arm.sh  base-${OS_IMG_NAME} ${PYTHON_PACKAGE} ${NET_CONF}  ${DT_BLOB}
@@ -56,3 +56,7 @@ clean:
 
 cleanall: clean
 	rm base-*.img spi-*.img  -f
+
+
+# export $(grep -v '^#' /etc/environment | xargs -d '\r\n');
+# pip install  --no-dependencies--force-reinstall --upgrade /opt/sticky_pi/sticky_pi_device.tar.gz

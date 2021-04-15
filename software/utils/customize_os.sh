@@ -12,6 +12,7 @@ pacman -S python-pip dosfstools devtools libjpeg uboot-tools base-devel parted -
 pacman -Scc --noconfirm
 
 pip install --upgrade pip --no-cache-dir
+pip install requests --no-cache-dir
 pip install rpi_ws281x --no-cache-dir
 pip install pytz netifaces pillow --no-cache-dir
 pip install piexif --no-cache-dir

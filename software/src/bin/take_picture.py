@@ -25,8 +25,8 @@ if __name__ == '__main__':
         os.makedirs(img_subdir)
     logfile = os.path.join(img_subdir, 'sticky_pi.log')
     logging.basicConfig(filename=logfile)
-
     logging.warning('Logging at %s' % datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
     dir_path = os.path.dirname(os.path.realpath(__file__))
     sync_to_harvester = False
 

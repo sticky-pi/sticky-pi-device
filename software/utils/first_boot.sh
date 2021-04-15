@@ -48,8 +48,8 @@ echo "All good"
 
 # make the image read only if defined in env file
 if [[ SPI_MAKE_READ_ONLY == 1 ]]; then
-  mount /dev/$SDp1 /boot
-  cp /boot/cmdline.txt /cmdline.txt-backup
+  mount /dev/${SD}p1 /boot
+  cp /boot/cmdline.txt /boot/cmdline.txt-backup
   sed s/rw/ro/g /boot/cmdline.txt-backup > $/boot/cmdline.txt
 
   cp /etc/fstab /etc/fstab-backup

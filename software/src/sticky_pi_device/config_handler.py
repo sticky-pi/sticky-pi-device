@@ -20,7 +20,11 @@ _type_dict = {
     "SPI_FLASH_GPIO": int,
     "SPI_DHT": str,
     "SPI_DHT_TIMEOUT": int,
-    "SPI_IM_JPEG_QUALITY": int
+    "SPI_IM_JPEG_QUALITY": int,
+    "SPI_NET_INTERFACE":str,
+    "SPI_HARVESTER_HOSTNAME": str,
+    "SPI_WIFI_SSID": str,
+    "SPI_WIFI_PASSWORD": str,
 }
 
 

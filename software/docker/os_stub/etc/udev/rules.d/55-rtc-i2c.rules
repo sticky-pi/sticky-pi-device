@@ -1,0 +1,5 @@
+# I2C RTC, when added and not the source of the sys clock (kernel), is used ;
+# separate name to ensure rtc-i2c.service will not be run on anything else
+ACTION=="add", SUBSYSTEMS=="i2c", SUBSYSTEM=="rtc", KERNEL=="rtc0", ATTR{hctosys}=="0", SYMLINK+="rtc_i2c", TAG+="systemd"
+
+

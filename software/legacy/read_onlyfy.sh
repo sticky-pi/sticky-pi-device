@@ -1,4 +1,3 @@
-#TARGET=2020-03-27_sticky_pi_rpi.img
 MOUNT_DIR=/mnt/sticky_pi_root
 OS_IMG_NAME=${TARGET%.*}-RO.img
 

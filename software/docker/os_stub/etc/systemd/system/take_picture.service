@@ -1,11 +1,11 @@
 [Unit]
 Description=Take picture and turn off
-After=time-sync.target
+After=time-sync.target rtc-i2c.service
+Wants=rtc-i2c.service
 
 [Service]
-EnvironmentFile=/etc/environment
 Type=oneshot
-ExecStart=/usr/bin/take_picture.py
+ExecStart=/usr/bin/python /opt/sticky_pi/take_picture.py
 RemainAfterExit=false
 
 [Install]

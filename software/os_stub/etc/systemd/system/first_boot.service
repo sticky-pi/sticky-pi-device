@@ -1,0 +1,16 @@
+[Unit]
+Description=Set up system at first boot, Then deactivate itself
+After=time-sync.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/environment
+ExecStart=/bin/sh -c '/opt/sticky_pi/utils/first_boot.sh'
+# deactivate itself if success on first boot
+ExecStartPost=/bin/systemctl disable first_boot.service
+
+
+[Install]
+WantedBy=basic.target
+
+

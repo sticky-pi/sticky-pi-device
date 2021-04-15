@@ -33,6 +33,5 @@ echo "fdisk non-zero exit status"
 # make fat32 file system on the new partition
 partprobe $SD
 mkfs.vfat ${SD}p3
-echo labeling ${SD}p3 as 'SPI_IMAGES'
-
-fatlabel  ${SD}p3 SPI_IMAGES
+echo labeling ${SD}p3 as ${SPI_DRIVE_LABEL}
+fatlabel  ${SD}p3 ${SPI_DRIVE_LABEL}

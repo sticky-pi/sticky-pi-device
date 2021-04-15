@@ -11,7 +11,7 @@ fixup_file=fixup_x.dat
 dtoverlay=pi3-disable-bt
 
 #Disable Wifi
-# dtoverlay=pi3-disable-wifi
+dtoverlay=pi3-disable-wifi
 boot_delay=0
 
 # rtc

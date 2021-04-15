@@ -45,3 +45,20 @@ systemctl --now enable ${SPI_TARGET_SERVICE}
 echo "Disabling  first boot script"
 systemctl disable first_boot.service
 echo "All good"
+
+# make the image read only if defined in env file
+if [[ SPI_MAKE_READ_ONLY == 1 ]]; then
+  mount /dev/$SDp1 /boot
+  cp /boot/cmdline.txt /cmdline.txt-backup
+  sed s/rw/ro/g /boot/cmdline.txt-backup > $/boot/cmdline.txt
+
+  cp /etc/fstab /etc/fstab-backup
+  cat /etc/fstab-backup > /etc/fstab
+  echo 'tmpfs   /var/log    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
+  echo 'tmpfs   /var/tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
+
+  cp /etc/systemd/journald.conf /etc/systemd/journald.conf-backup
+  cat /etc/systemd/journald.conf-backup > /etc/systemd/journald.conf
+  echo Storage="none" >> /etc/systemd/journald.conf
+  history -c -w
+fi

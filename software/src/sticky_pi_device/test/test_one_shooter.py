@@ -1,11 +1,16 @@
-from unittest.mock import Mock
 import sys
-
-from PIL import Image, ImageDraw
+import os
+import json
+import tempfile
+import shutil
 import random
 import logging
 from io import BytesIO
 import time
+from PIL import Image, ImageDraw
+
+from unittest.mock import Mock
+from unittest.case import TestCase
 sys.modules['picamera'] = Mock()
 sys.modules['Adafruit_DHT'] = Mock()
 sys.modules['RPi'] = Mock()
@@ -14,11 +19,8 @@ from sticky_pi_device.config_handler import ConfigHandler
 from sticky_pi_device.one_shooter import PiOneShooter
 
 
-
 logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
-
-
 
 
 class DummyCamera(object):
@@ -79,6 +81,7 @@ class DummyCamera(object):
 
 
     def capture(self, path,
+                quality=100,
                 iso=200,
                 awb_gains=(1,1),
                 shutter_speed=1):
@@ -151,18 +154,36 @@ class DummyOneShooter(PiOneShooter):
         return out
 
 
-import os
-import json
-c = ConfigHandler()
-metadata_file = os.path.join(c.SPI_IMAGE_DIR, c.SPI_METADATA_FILENAME)
-init_metadata = {"lat": 0,
-                 "lng": 0,
-                 "alt": 0}
-with open(metadata_file, 'w') as f:
-    json.dump(init_metadata, f)
+class TestOneShooter(TestCase):
+    def __init__(self, methodName, spi_img_dir=None):
 
-a = DummyOneShooter(c)
-a.shoot()
-a.shoot()
-a.shoot()
+        super().__init__(methodName)
+        self._spi_img_dir = spi_img_dir
 
+    def test_one_shooter(self):
+        self._spi_img_dir = None
+        if not self._spi_img_dir:
+            self._spi_img_dir = tempfile.mkdtemp(prefix="spi_")
+            del_img_dir = True
+        else:
+            del_img_dir = False
+        os.environ['SPI_IMAGE_DIR'] = self._spi_img_dir
+        os.environ['SPI_HARVESTER_HOSTNAME'] = 'harvester_api'
+        try:
+
+            c = ConfigHandler()
+            metadata_file = os.path.join(c.SPI_IMAGE_DIR, c.SPI_METADATA_FILENAME)
+            init_metadata = {"lat": 0,
+                             "lng": 0,
+                             "alt": 0}
+            with open(metadata_file, 'w') as f:
+                json.dump(init_metadata, f)
+
+            a = DummyOneShooter(c)
+            a.shoot()
+            a.shoot()
+            a.shoot()
+
+        finally:
+            if del_img_dir:
+                shutil.rmtree(os.environ['SPI_IMAGE_DIR'])

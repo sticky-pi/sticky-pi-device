@@ -21,4 +21,4 @@ exit 1
 umount ${DEV}p1
 umount ${DEV}p2
 losetup -d $DEV
-mv tmp-$OS_IMG_NAME spi-$OS_IMG_NAME
+mv tmp-$OS_IMG_NAME $OS_IMG_NAME

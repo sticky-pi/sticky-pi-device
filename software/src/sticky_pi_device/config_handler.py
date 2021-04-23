@@ -1,7 +1,6 @@
 import os
-
+from sticky_pi_device._version import __version__
 _type_dict = {
-    "SPI_VERSION": str,
     "SPI_DRIVE_LABEL": str,
     "SPI_IMAGE_DIR": str,
     "SPI_METADATA_FILENAME": str,
@@ -30,6 +29,8 @@ _type_dict = {
 
 class ConfigHandler(dict):
     def __init__(self):
+        self["SPI_VERSION"] = __version__,
+
         super().__init__()
         for k, t in _type_dict.items():
             self[k] = t(os.environ[k])

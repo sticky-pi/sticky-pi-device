@@ -15,6 +15,8 @@ if __name__ == '__main__':
     logfile = os.path.join(img_subdir, 'sticky_pi_data_sync.log')
     logging.basicConfig(filename=logfile)
     logging.warning('Logging at %s' % datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    ds = DataSyncer(config)
-    ds.sync()
-
+    try:
+        ds = DataSyncer(config)
+        ds.sync()
+    except Exception as e:
+        logging.error(e)

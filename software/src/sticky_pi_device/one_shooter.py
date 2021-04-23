@@ -26,14 +26,16 @@ class Metadata(dict):
             data = json.load(f)
         for k, t in self._expected_fields.items():
             assert k in data
-            self[k] = t(data[k])
+            if data[k] is None:
+                self[k] = None
+            else:
+                self[k] = t(data[k])
 
 
 class PiOneShooter(object):
     _max_exposure = 10000  # us ## see https://github.com/pieelab/sticky_pi/issues/39
     _preview_resolution = (1600, 1200)
     def __init__(self, config: ConfigHandler):
-        self._camera = None
         self._config = config
         self._resolution = (self._config.SPI_IM_W, self._config.SPI_IM_H)
         self._resolution_light_sens = (self._config.SPI_LIGHT_SENSOR_W, self._config.SPI_LIGHT_SENSOR_H)
@@ -44,16 +46,22 @@ class PiOneShooter(object):
         self._awb_gains = (self._config.SPI_AWB_RED,
                            self._config.SPI_AWB_BLUE)
 
-    def __del__(self):
-        self._close_camera()
+    # def __del__(self):
+    #     self._close_camera()
 
     def shoot(self, preview=False, close_camera_after=True):
         data = Metadata(os.path.join(self._config.SPI_IMAGE_DIR, self._config.SPI_METADATA_FILENAME))
+        logging.warning("metadata parsed")
         try:
             filename = self._make_file_path()
-            data.update(self._picture(filename, preview, close_camera_after))
+            logging.warning("Filename made")
+            data.update(self._picture(filename + ".tmp", preview, close_camera_after))
+            logging.warning("picture taken")
             data.update(self._read_temp_hum())
-            self._add_light_info_exif(filename, data)
+            logging.warning("temp read")
+            self._add_light_info_exif(filename+ ".tmp", data)
+            logging.warning("exif modifis")
+            os.rename(filename+ ".tmp", filename)
         except Exception as e:
             self._report_error(e)
             raise e
@@ -117,66 +125,51 @@ class PiOneShooter(object):
             os.makedirs(dir)
         out = {}
 
-        if self._camera is None:
-            self._camera = self._camera_instance()
-
-        logging.info('precapture')
-        self._camera.resolution = self._resolution_light_sens
-        self._camera.flash_mode = 'off'
-        self._camera.framerate = 2
-        temp_file = tempfile.mktemp(".jpg", "sticky_pi")
-        time.sleep(1)
-        self._camera.capture(temp_file)
+        self._camera = self._camera_instance()
         try:
-            out = self._get_light_exifs(temp_file)
-        except Exception as e:
-            logging.error(e)
-        finally:
-            os.remove(temp_file)
-
-        if preview:
+            logging.warning('precapture')
+            self._camera.resolution = self._resolution_light_sens
+            self._camera.flash_mode = 'off'
+            self._camera.framerate = 2
+            temp_file = tempfile.mktemp(".jpg", "sticky_pi")
+            time.sleep(1)
+            self._camera.capture(temp_file)
             try:
-                self._camera.resolution = self._preview_resolution
-                self._camera.start_preview()
-                logging.info('Showing preview, NO PICTURE saved.')
-                time.sleep(5)
+                out = self._get_light_exifs(temp_file)
+            except Exception as e:
+                logging.error(e)
             finally:
-                self._camera.stop_preview()
-                return out
-
-        logging.info('capture now')
-        self._camera.framerate = 30
-        self._camera.resolution = self._resolution
-        self._camera.flash_mode = 'on'
-
-        # fixme makes sense to set the iso ahead, and the query exposure?
-        if self._camera.exposure_speed > self._max_exposure:
-            self._camera.shutter_speed = self._max_exposure
-            self._camera.iso = 100
-
-        self._camera.awb_mode = 'off'
-        self._camera.awb_gains = self._awb_gains
-        self._camera.zoom = self._zoom
-
-        time.sleep(.5)
-        temp_file = tempfile.mktemp(".jpg", "sticky_pi")
-        try:
-            self._camera.capture(temp_file, quality=self._config.SPI_IM_JPEG_QUALITY)
-            if close_camera_after:
-                self._close_camera()
-        except Exception as e:
-            if os.path.exists(temp_file):
                 os.remove(temp_file)
-            raise e
-        shutil.move(temp_file, path)
-        logging.info('All good, img saved in' + path)
+
+            logging.warning('capture now')
+            self._camera.framerate = 30
+            self._camera.resolution = self._resolution
+            self._camera.flash_mode = 'on'
+
+            # fixme makes sense to set the iso ahead, and the query exposure?
+            if self._camera.exposure_speed > self._max_exposure:
+                self._camera.shutter_speed = self._max_exposure
+                self._camera.iso = 100
+
+            self._camera.awb_mode = 'off'
+            self._camera.awb_gains = self._awb_gains
+            self._camera.zoom = self._zoom
+
+            time.sleep(.5)
+            temp_file = tempfile.mktemp(".jpg", "sticky_pi")
+            try:
+                self._camera.capture(temp_file, quality=self._config.SPI_IM_JPEG_QUALITY)
+                logging.warning("capture Done")
+            except Exception as e:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+                raise e
+            shutil.move(temp_file, path)
+        finally:
+            self._camera.close()
+            logging.warning("Camera closed")
         return out
 
-    def _close_camera(self):
-        if self._camera is not None:
-            logging.debug('closing camera')
-            self._camera.close()
-        self._camera = None
 
     def _camera_instance(self):
         return picamera.PiCamera()

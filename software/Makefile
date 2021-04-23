@@ -14,12 +14,12 @@ custom_os: ${OS_IMG_NAME}.gz
 device_tree: ${DT_BLOB}
 net_conf: ${NET_CONF}
 python_package: ${PYTHON_PACKAGE}
-all :spi-${OS_IMG_NAME}.gz
+all :${OS_IMG_NAME}.gz
 
 
 ${BASE_OS_IMG_NAME}: utils/make_base_os.sh
 	@set +a
-	bash $< || (rm -f tmp-${OS_IMG_NAME}; echo "Failed to make base image!"; exit 1)
+	@bash $< || (rm -f tmp-${OS_IMG_NAME}; echo "Failed to make base image!"; exit 1)
 	@echo "Made base image $@ !"
 	@set -a
 
@@ -28,9 +28,11 @@ ${DT_BLOB}: utils/dt-blob.dts
 	@dtc -I dts -O dtb $< -o $@ 2> /dev/null
 	@echo Made $@
 
-${PYTHON_PACKAGE}: ${PYTHON_RESOURCES}
-	cd src && rm -r dist && python setup.py sdist
-	cp src/dist/*.tar.gz $@ -v
+${PYTHON_PACKAGE}: ${PYTHON_RESOURCES} .env
+	@echo "# Do not modify manually. Built automatically from ../../.env" > src/sticky_pi_device/_version.py
+	@echo "__version__ = '${SPI_VERSION}'" >> src/sticky_pi_device/_version.py
+	@cd src && rm -r dist && python setup.py sdist
+	@cp src/dist/*.tar.gz $@ -v
 	@echo Made $@
 
 ${NET_CONF}: .env
@@ -45,9 +47,9 @@ ${NET_CONF}: .env
 
 ${OS_IMG_NAME}.gz: utils/emulate_arm.sh  base-${OS_IMG_NAME} ${PYTHON_PACKAGE} ${NET_CONF}  ${DT_BLOB}
 	@set +a
-	bash $< || (rm -f tmp-${OS_IMG_NAME};  echo "Failed to make final image!"; exit 1)
-	@echo "Made final image spi-${OS_IMG_NAME}! Compressing to $@"
-	@gzip spi-${OS_IMG_NAME}
+	@bash $< || (rm -f tmp-${OS_IMG_NAME};  echo "Failed to make final image!"; exit 1)
+	@echo "Made final image ${OS_IMG_NAME}! Compressing to $@"
+	@gzip ${OS_IMG_NAME} -f
 	@set -a
 
 

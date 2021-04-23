@@ -7,7 +7,7 @@ grep 'Model.*Raspberry Pi' /proc/cpuinfo -c || (
   )
 
 echo "Making partition?"
-(lsblk | grep ${SD}p3  -c) ||
+(lsblk | grep $(basename ${SD})p3  -c) ||
 (
 echo "Making new partition"
 fdisk $SD << EOF
@@ -39,8 +39,9 @@ grep "^LABEL=${SPI_DRIVE_LABEL}" /etc/fstab -c || (
 )
 
 echo "Disabling NTP time sync"
+systemctl enable rngd.service
+systemctl disable haveged rngd.service
 systemctl --now disable systemd-timesyncd.service
-
 systemctl --now enable ${SPI_TARGET_SERVICE}
 echo "Disabling  first boot script"
 systemctl disable first_boot.service
@@ -61,4 +62,8 @@ if [[ SPI_MAKE_READ_ONLY == 1 ]]; then
   cat /etc/systemd/journald.conf-backup > /etc/systemd/journald.conf
   echo Storage="none" >> /etc/systemd/journald.conf
   history -c -w
+
+  ##fixme
+  # systemctl  disable systemd-logind.service
+  # systemctl  disable systemd-user-sessions.service
 fi

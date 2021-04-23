@@ -8,7 +8,7 @@ pacman-key --init
 pacman-key --populate
 pacman -Syy
 pacman -Syu --noconfirm
-pacman -S python-pip dosfstools devtools libjpeg uboot-tools base-devel parted --needed --noconfirm
+pacman -S python-pip rng-tools dosfstools devtools libjpeg uboot-tools base-devel parted --needed --noconfirm
 pacman -Scc --noconfirm
 
 pip install --upgrade pip --no-cache-dir
@@ -22,7 +22,7 @@ pip install Adafruit_DHT --install-option="${ADAFRUIT_DHT_OPTION}" --no-cache-di
 export CFLAGS=-fcommon; pip install RPi.GPIO --no-cache-dir
 export READTHEDOCS=True; pip install picamera  --no-cache-dir # hack to circumvent virtual pi issue
 
-pip install /opt/sticky_pi/sticky_pi_device.tar.gz --no-cache-dir
+pip install /opt/sticky_pi/sticky_pi_device.tar.gz[device] --no-cache-dir
 
 systemctl enable first_boot.service
 systemctl disable sshd.service

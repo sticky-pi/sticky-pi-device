@@ -2,5 +2,5 @@ Interface=wlan0
 Connection=wireless
 Security=wpa
 IP=dhcp
-ESSID='PI_WIFI_SSID'
-Key='PI_WIFI_PASSWORD'
+ESSID='sticky-pi-net'
+Key='sticky-pi'

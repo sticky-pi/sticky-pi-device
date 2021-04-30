@@ -6,6 +6,7 @@ import os
 import json
 from sticky_pi_device.utils import device_id
 from sticky_pi_device.config_handler import ConfigHandler
+from sticky_pi_device.data_syncer import DataSyncer, NoHostOrNetworkException
 
 
 if __name__ == '__main__':
@@ -19,6 +20,24 @@ if __name__ == '__main__':
     parser.add_option("-n", "--no-sync",
                       dest="no_sync",
                       help="Does not sync to data harvester",
+                      default=False,
+                      action='store_true')
+
+    parser.add_option("-s", "--sync-only",
+                      dest="sync_only",
+                      help="Does not take any picture, just sync",
+                      default=False,
+                      action='store_true')
+
+    parser.add_option("-v", "--verbose",
+                      dest="verbose",
+                      help="Show info",
+                      default=False,
+                      action='store_true')
+
+    parser.add_option("-k", "--keep-alive",
+                      dest="keep_alive",
+                      help="Do not turn off after picture",
                       default=False,
                       action='store_true')
 
@@ -46,11 +65,18 @@ if __name__ == '__main__':
     img_subdir = os.path.join(config.SPI_IMAGE_DIR, device_id())
     if not os.path.exists(img_subdir):
         os.makedirs(img_subdir)
+
+    if option_dict["verbose"]:
+       log_level = logging.INFO
+    else:
+        log_level = logging.WARNING
+
     logfile = os.path.join(img_subdir, 'sticky_pi.log')
+
     logging.basicConfig(filename=logfile,
                         format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
-                        #    level=logging.INFO
+                        level=log_level
                         )
     logging.warning('Logging at %s' % datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
@@ -58,18 +84,22 @@ if __name__ == '__main__':
     sync_to_harvester = not option_dict['no_sync']
 
     try:
-        if sync_to_harvester:
-            from subprocess import Popen
-            logging.info('Spawning sync daemon')
-            command = ['sync_to_harvester.py']
-            p = Popen(command)
-        one_shooter.shoot(close_camera_after=True)
+        one_shooter.shoot()
+
     except Exception as e:
-        logging.error(e)
+        logging.error(e, exc_info=True)
         raise e
     finally:
-        if sync_to_harvester:
-            logging.info('waiting for backup')
-            p.wait(timeout=600)
-        one_shooter.power_off()
-
+        try:
+            if not option_dict["no_sync"]:
+                ds = DataSyncer(config)
+                logging.info("Syncing")
+                ds.sync()
+        except NoHostOrNetworkException as e:
+            logging.info(e)
+        except Exception as e:
+            logging.error(e, exc_info=True)
+            raise e
+        finally:
+            if not option_dict["keep_alive"]:
+                one_shooter.power_off()

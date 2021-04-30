@@ -1,5 +1,5 @@
-import PIL.Image
-import PIL.ExifTags
+# import PIL.Image
+# import PIL.ExifTags
 import piexif
 import picamera
 import Adafruit_DHT
@@ -33,8 +33,8 @@ class Metadata(dict):
 
 
 class PiOneShooter(object):
-    _max_exposure = 10000  # us ## see https://github.com/pieelab/sticky_pi/issues/39
-    _preview_resolution = (1600, 1200)
+    _max_exposure = 50000  # us ## see https://github.com/pieelab/sticky_pi/issues/39
+
     def __init__(self, config: ConfigHandler):
         self._config = config
         self._resolution = (self._config.SPI_IM_W, self._config.SPI_IM_H)
@@ -46,34 +46,28 @@ class PiOneShooter(object):
         self._awb_gains = (self._config.SPI_AWB_RED,
                            self._config.SPI_AWB_BLUE)
 
-    # def __del__(self):
-    #     self._close_camera()
 
-    def shoot(self, preview=False, close_camera_after=True):
+
+    def shoot(self, preview=False):
         data = Metadata(os.path.join(self._config.SPI_IMAGE_DIR, self._config.SPI_METADATA_FILENAME))
-        logging.warning("metadata parsed")
         try:
             filename = self._make_file_path()
-            logging.warning("Filename made")
-            data.update(self._picture(filename + ".tmp", preview, close_camera_after))
-            logging.warning("picture taken")
+            data.update(self._picture(filename + ".tmp", preview))
             data.update(self._read_temp_hum())
-            logging.warning("temp read")
             self._add_light_info_exif(filename+ ".tmp", data)
-            logging.warning("exif modifis")
             os.rename(filename+ ".tmp", filename)
         except Exception as e:
             self._report_error(e)
             raise e
 
-    def _report_error(self, e, n_flashes=4):
+    def _report_error(self, e, n_flashes=5):
         GPIO.setup(self._config.SPI_FLASH_GPIO, GPIO.OUT)  # set a port/pin as an output
         try:
             for i in range(n_flashes):
                 GPIO.output(self._config.SPI_FLASH_GPIO, 1)
                 time.sleep(0.1)
                 GPIO.output(self._config.SPI_FLASH_GPIO, 0)
-                time.sleep(0.1)
+                time.sleep(1)
         finally:
             GPIO.output(self._config.SPI_FLASH_GPIO, 0)
 
@@ -96,14 +90,13 @@ class PiOneShooter(object):
         try:
             humidity, temperature = Adafruit_DHT.read_retry(sensor, pin, retries=10, delay_seconds=.25)
         except Exception as e:
-            logging.error(e)
+            logging.error(e, exc_info=True)
         out = {'temp': temperature,
                'hum': humidity}
         return out
 
     def _read_temp_hum(self):
         import signal
-
         def handler(signum, frame):
             raise Exception("DHT timed out")
 
@@ -114,81 +107,53 @@ class PiOneShooter(object):
         try:
             out = self._read_dht_safe(self._config.SPI_DHT_GPIO)
         except Exception as e:
-            logging.error(e)
+            logging.error(e, exc_info=True)
         finally:
             signal.alarm(0)
             return out
 
-    def _picture(self, path, preview=False, close_camera_after=True):
+    def _picture(self, path, preview=False):
         dir = os.path.dirname(path)
         if not os.path.exists(dir):
             os.makedirs(dir)
         out = {}
 
-        self._camera = self._camera_instance()
+        camera = self._camera_instance()
         try:
-            logging.warning('precapture')
-            self._camera.resolution = self._resolution_light_sens
-            self._camera.flash_mode = 'off'
-            self._camera.framerate = 2
-            temp_file = tempfile.mktemp(".jpg", "sticky_pi")
-            time.sleep(1)
-            self._camera.capture(temp_file)
-            try:
-                out = self._get_light_exifs(temp_file)
-            except Exception as e:
-                logging.error(e)
-            finally:
-                os.remove(temp_file)
+            logging.info('Capture')
+            # warm up
+            time.sleep(1.0)
+            camera.framerate = 10
+            camera.resolution = self._resolution
+            camera.flash_mode = 'on'
+            camera.zoom = self._zoom
 
-            logging.warning('capture now')
-            self._camera.framerate = 30
-            self._camera.resolution = self._resolution
-            self._camera.flash_mode = 'on'
+            out = {'no_flash_exposure_time': camera.exposure_speed,
+                   'no_flash_analog_gain': float(camera.analog_gain),
+                   'no_flash_analog_gain': float(camera.digital_gain)}
 
             # fixme makes sense to set the iso ahead, and the query exposure?
-            if self._camera.exposure_speed > self._max_exposure:
-                self._camera.shutter_speed = self._max_exposure
-                self._camera.iso = 100
-
-            self._camera.awb_mode = 'off'
-            self._camera.awb_gains = self._awb_gains
-            self._camera.zoom = self._zoom
-
-            time.sleep(.5)
+            if camera.exposure_speed > self._max_exposure:
+                camera.shutter_speed = self._max_exposure
+                camera.iso = 100
+            camera.awb_mode = 'off'
+            camera.awb_gains = self._awb_gains
             temp_file = tempfile.mktemp(".jpg", "sticky_pi")
             try:
-                self._camera.capture(temp_file, quality=self._config.SPI_IM_JPEG_QUALITY)
-                logging.warning("capture Done")
+                camera.capture(temp_file, quality=self._config.SPI_IM_JPEG_QUALITY)
             except Exception as e:
                 if os.path.exists(temp_file):
                     os.remove(temp_file)
                 raise e
             shutil.move(temp_file, path)
         finally:
-            self._camera.close()
-            logging.warning("Camera closed")
+            camera.close()
         return out
 
 
     def _camera_instance(self):
         return picamera.PiCamera()
 
-    @staticmethod
-    def _get_light_exifs(path):
-        img = PIL.Image.open(path)
-
-        d = {
-            PIL.ExifTags.TAGS[k]: v
-            for k, v in img._getexif().items()
-            if k in PIL.ExifTags.TAGS
-        }
-
-        out = {'no_flash_exposure_time': d['ExposureTime'],
-               'no_flash_iso': d['ISOSpeedRatings'],
-               'no_flash_bv': d['BrightnessValue'],
-               'no_flash_shutter_speed': d['ShutterSpeedValue']}
-        return out
 
     @staticmethod
     def _add_light_info_exif(path, dict):
@@ -199,9 +164,8 @@ class PiOneShooter(object):
         piexif.insert(exif_bytes, path)
 
     def power_off(self):
-        logging.info('powering off though gpio')
+        logging.info('Powering off though gpio')
         GPIO.setup(self._config.SPI_OFF_GPIO, GPIO.OUT)  # set a port/pin as an output
-        logging.info('Syncing')
+        logging.info('Syncing file system and powering off')
         os.sync()
-        logging.info('Unplugging the juice!')
         GPIO.output(self._config.SPI_OFF_GPIO, 1)

@@ -10,13 +10,18 @@ fixup_file=fixup_x.dat
 # Disable bluetooth
 dtoverlay=pi3-disable-bt
 
-#Disable Wifi
-# dtoverlay=pi3-disable-wifi
+# Disable Wifi
 boot_delay=0
 
 # rtc
 dtoverlay=i2c-rtc,ds1307
 
-#disable leds
+# this overclocks the sd card, that can lead to faster boot time, but risky, depending on the card
+# see https://www.jeffgeerling.com/blog/2016/how-overclock-microsd-card-reader-on-raspberry-pi-3
+
+# dtparam=sd_overclock=100
+
+
+# Disable leds
 dtparam=act_led_trigger=none
 dtparam=act_led_activelow=on

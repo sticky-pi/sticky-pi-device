@@ -39,10 +39,11 @@ grep "^LABEL=${SPI_DRIVE_LABEL}" /etc/fstab -c || (
 )
 
 echo "Disabling NTP time sync"
-systemctl enable rngd.service
-systemctl disable haveged rngd.service
+
 systemctl --now disable systemd-timesyncd.service
+timedatdtl set-time "2000-01-01 00:00:00"
 systemctl --now enable ${SPI_TARGET_SERVICE}
+
 echo "Disabling  first boot script"
 systemctl disable first_boot.service
 echo "All good"
@@ -61,9 +62,10 @@ if [[ SPI_MAKE_READ_ONLY == 1 ]]; then
   cp /etc/systemd/journald.conf /etc/systemd/journald.conf-backup
   cat /etc/systemd/journald.conf-backup > /etc/systemd/journald.conf
   echo Storage="none" >> /etc/systemd/journald.conf
-  history -c -w
 
-  ##fixme
-  # systemctl  disable systemd-logind.service
-  # systemctl  disable systemd-user-sessions.service
+  ##fixme TEST THIS
+  systemctl  disable systemd-logind.service
+  systemctl  disable systemd-user-sessions.service
+
+  history -c -w
 fi

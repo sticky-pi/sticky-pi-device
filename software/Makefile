@@ -47,7 +47,8 @@ ${NET_CONF}: .env
 
 ${OS_IMG_NAME}.gz: utils/emulate_arm.sh  base-${OS_IMG_NAME} ${PYTHON_PACKAGE} ${NET_CONF}  ${DT_BLOB}
 	@set +a
-	@bash $< || (rm -f tmp-${OS_IMG_NAME};  echo "Failed to make final image!"; exit 1)
+#fixme disable rm close
+	@bash $<  || (rm -f tmp-${OS_IMG_NAME};  echo "Failed to make final image!"; exit 1)
 	@echo "Made final image ${OS_IMG_NAME}! Compressing to $@"
 	@gzip ${OS_IMG_NAME} -f
 	@set -a

@@ -1,4 +1,3 @@
-
 import datetime
 from subprocess import Popen, PIPE, STDOUT
 import time
@@ -8,6 +7,7 @@ import requests
 import glob
 import json
 import re
+import os
 from sticky_pi_device.utils import device_id
 from sticky_pi_device.config_handler import ConfigHandler
 
@@ -16,37 +16,42 @@ def img_file_hash(path):
     # fixme. make a fast hash, e.g. using first and last bytes
     return f"hash-{stats.st_size}"
 
+class NoHostOrNetworkException (Exception):
+    pass
 
 class DataSyncer(object):
     # Percent. If disk space is lower than this value, after data sync, the oldest half of the data is removed!
     _min_available_disk_space = 10
+    _upload_pool_size = 4
 
     def __init__(self, config: ConfigHandler):
         self._config = config
 
     def sync(self):
+        # typically, interface is up 5s before host is ping able
+        if not self._is_any_net_interface_up():
+            logging.info("No network interface, not syncing")
+            return
         if not self._ping_harvester():
-            logging.info("Cannot reach host. Trying wifi")
-            self._start_network_interface()
-            # we don't have network immediately after the interface starts'
-            start = time.time()
-            while not self._ping_harvester():
-                time.sleep(.5)
-                # after 15s, we give up
-                if time.time() - start > 15:
-                    raise Exception(f"Cannot reach host {self._config.SPI_HARVESTER_HOSTNAME}")
-        else:
-            logging.info("Host is reached without wifi")
+            raise NoHostOrNetworkException(f"Cannot reach host {self._config.SPI_HARVESTER_HOSTNAME}")
 
         self._get_harvester_status()
         self._upload_images()
 
-
-    def _ping_harvester(self):
-        import os
-        host = self._config.SPI_HARVESTER_HOSTNAME
-        response = os.system("ping -c 1 " + host)
+    def _is_any_net_interface_up(self):
+        # grep all interfaces that are UP
+        response = os.system("ip a | grep ^[0-9] | grep 'state UP' -q")
         return response == 0
+
+    def _ping_harvester(self, timeout = 10):
+        host = self._config.SPI_HARVESTER_HOSTNAME
+        start = time.time()
+        while time.time() - start < timeout:
+            response = os.system(f"ping -c 1 " + host)
+            if response == 0:
+                return True
+            time.sleep(1)
+        return False
 
     def _get_device_status(self):
         status = {"version": self._config.SPI_VERSION,
@@ -80,7 +85,8 @@ class DataSyncer(object):
             else:
                 device_status["progress_to_upload"] += 1
 
-        for image in sorted(image_status.keys()):
+
+        def upload_one_image(image):
             image_path = os.path.join(self._config.SPI_IMAGE_DIR, dev_id, image)
             logging.info((image_path, image_status[image]))
             if image_status[image] != "uploaded":
@@ -102,6 +108,14 @@ class DataSyncer(object):
                         device_status["progress_errors"] += 1
             else:
                 device_status["progress_skipping"] += 1
+
+        # for image in sorted(image_status.keys()):
+        #    upload_one_image(image)
+        from multiprocessing.pool import ThreadPool as Pool
+        with Pool(self._upload_pool_size) as p:
+             out = p.map(upload_one_image, sorted(image_status.keys()))
+
+
         # logging.warning(device_status)
         if device_status['available_disk_space'] < self._min_available_disk_space:
             logging.warning("Removing old files")
@@ -133,15 +147,6 @@ class DataSyncer(object):
         path = os.path.join(self._config.SPI_IMAGE_DIR, self._config.SPI_METADATA_FILENAME)
         with open(path, 'w') as f:
             f.write(json.dumps(meta))
-
-    def _start_network_interface(self):
-        from subprocess import Popen
-        logging.info('Starting network interface')
-        command = ["netctl", "start", self._config.SPI_NET_INTERFACE]
-        p = Popen(command)
-        exit_code = p.wait(10)
-        if exit_code != 0:
-            raise Exception(f"Cannot start interface {self._config.SPI_NET_INTERFACE}")
 
     def _available_disk_space(self):
         label = self._config.SPI_DRIVE_LABEL

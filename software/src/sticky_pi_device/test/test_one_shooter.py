@@ -32,6 +32,8 @@ class DummyCamera(object):
         self.exposure_speed = 0
         self.shutter_speed = 0
         self.iso = 0
+        self.analog_gain = 1.0
+        self.digital_gain = 1.0
 
         logging.info("Starting virtual camera")
 

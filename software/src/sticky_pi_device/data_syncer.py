@@ -24,9 +24,13 @@ class DataSyncer(object):
     _min_available_disk_space = 10
     _upload_pool_size = 4
 
-    def __init__(self, config: ConfigHandler):
+    def __init__(self, config: ConfigHandler, logfile_path, dev_id = None):
         self._config = config
-
+        if dev_id is None:
+            self._device_id = device_id()
+        else:
+            self._device_id = dev_id
+        self._logfile_path = logfile_path
     def sync(self):
         # typically, interface is up 5s before host is ping able
         if not self._is_any_net_interface_up():
@@ -62,11 +66,13 @@ class DataSyncer(object):
         return status
 
     def _upload_images(self):
-        dev_id = device_id()
+        dev_id = self._device_id
         host = self._config.SPI_HARVESTER_HOSTNAME
         url_images_to_upload = f"http://{host}/images_to_upload/{dev_id}"
         url_upload = f"http://{host}/upload_device_images/{dev_id}"
+        url_upload_log = f"http://{host}/upload_device_logfile/{dev_id}"
         url_update_status = f"http://{host}/update_device_status/{dev_id}"
+
 
         pattern = os.path.join(self._config.SPI_IMAGE_DIR, dev_id, "*.jpg")
 
@@ -115,13 +121,21 @@ class DataSyncer(object):
         with Pool(self._upload_pool_size) as p:
              out = p.map(upload_one_image, sorted(image_status.keys()))
 
-
         # logging.warning(device_status)
         if device_status['available_disk_space'] < self._min_available_disk_space:
             logging.warning("Removing old files")
             self._remove_old_files()
 
         # Formally finish transaction
+
+        with open(self._logfile_path, 'rb') as f:
+            payload = {'logfile': (os.path.basename(self._logfile_path), f, 'application/octet-stream'),
+                       'status': ('status', json.dumps(device_status), 'application/json'),
+                       'hash': ('hash', json.dumps(img_file_hash(self._logfile_path)), 'application/json')
+                       }
+            response = requests.post(url_upload_log, files=payload)
+
+
         device_status['in_transaction'] = 0
         response = requests.post(url_update_status, json=device_status)
         assert response.status_code == 200, response
@@ -166,7 +180,7 @@ class DataSyncer(object):
         else:
             raise Exception("Cannot assess space left on device")
 
-    def _remove_old_files():
+    def _remove_old_files(self):
         all_files = []
         # should not be any , but remove them if the exist
         temp_files = []

@@ -18,14 +18,10 @@ setup(
                       'piexif',
     ],
     extras_require={
-        ###Not needed : # 'adafruit-circuitpython-dht',
         'device': ['pyserial',
                   'RPi.GPIO',
                   'picamera',
                   'Adafruit_DHT'],
         'devel': ['pillow']
-#         'test': ['nose', 'pytest', 'pytest-cov', 'codecov', 'coverage'],
-#         'docs': ['mock', 'sphinx-autodoc-typehints', 'sphinx', 'sphinx_rtd_theme', 'recommonmark', 'mock']
     },
-#     test_suite='nose.collector'
 )

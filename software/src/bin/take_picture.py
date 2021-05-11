@@ -17,6 +17,11 @@ if __name__ == '__main__':
                       default=False,
                       action='store_true')
 
+    parser.add_option("-i", "--device-id",
+                      dest="device_id",
+                      help="The device unique id. On raspberry pi, infered from the CPU serial",
+                      default=None)
+
     parser.add_option("-n", "--no-sync",
                       dest="no_sync",
                       help="Does not sync to data harvester",
@@ -45,13 +50,17 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
     option_dict = vars(options)
 
+    config = ConfigHandler()
+
     if option_dict['dummy_device']:
         logging.warning("Using dummy camera (-d flag)")
         from sticky_pi_device.test.test_one_shooter import DummyOneShooter as PiOneShooter
+        img_subdir = os.path.join(config.SPI_IMAGE_DIR, option_dict['device_id'])
     else:
         from sticky_pi_device.one_shooter import PiOneShooter
+        assert option_dict['device_id'] is None, "Cannot set device ID on an actual device. This is reserved for dummy devices/development"
+        img_subdir = os.path.join(config.SPI_IMAGE_DIR, device_id())
 
-    config = ConfigHandler()
     metadata_file = os.path.join(config.SPI_IMAGE_DIR, config.SPI_METADATA_FILENAME)
 
     if not os.path.exists(metadata_file):
@@ -61,8 +70,8 @@ if __name__ == '__main__':
         with open(metadata_file, 'w') as f:
             json.dump(init_metadata, f)
 
-    one_shooter = PiOneShooter(config)
-    img_subdir = os.path.join(config.SPI_IMAGE_DIR, device_id())
+    one_shooter = PiOneShooter(config, dev_id=option_dict['device_id'])
+
     if not os.path.exists(img_subdir):
         os.makedirs(img_subdir)
 
@@ -72,7 +81,6 @@ if __name__ == '__main__':
         log_level = logging.WARNING
 
     logfile = os.path.join(img_subdir, 'sticky_pi.log')
-
     logging.basicConfig(filename=logfile,
                         format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
@@ -92,7 +100,7 @@ if __name__ == '__main__':
     finally:
         try:
             if not option_dict["no_sync"]:
-                ds = DataSyncer(config)
+                ds = DataSyncer(config, logfile_path=logfile, dev_id=option_dict['device_id'])
                 logging.info("Syncing")
                 ds.sync()
         except NoHostOrNetworkException as e:

@@ -38,21 +38,18 @@ grep "^LABEL=${SPI_DRIVE_LABEL}" /etc/fstab -c || (
   echo "Partition mounted"
 )
 
-echo "Disabling NTP time sync"
 
+echo "Setting dummy time"
 systemctl --now disable systemd-timesyncd.service
-timedatdtl set-time "2000-01-01 00:00:00"
-systemctl --now enable ${SPI_TARGET_SERVICE}
+timedatectl set-time "2000-01-01 00:00:00"
 
-echo "Disabling  first boot script"
-systemctl disable first_boot.service
-echo "All good"
 
 # make the image read only if defined in env file
-if [[ SPI_MAKE_READ_ONLY == 1 ]]; then
-  mount /dev/${SD}p1 /boot
+if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
+  echo "Making read-only FS"
+  (mount ${SD}p1 /boot
   cp /boot/cmdline.txt /boot/cmdline.txt-backup
-  sed s/rw/ro/g /boot/cmdline.txt-backup > $/boot/cmdline.txt
+  sed s/rw/ro/g /boot/cmdline.txt-backup > /boot/cmdline.txt
 
   cp /etc/fstab /etc/fstab-backup
   cat /etc/fstab-backup > /etc/fstab
@@ -64,8 +61,14 @@ if [[ SPI_MAKE_READ_ONLY == 1 ]]; then
   echo Storage="none" >> /etc/systemd/journald.conf
 
   ##fixme TEST THIS
-  systemctl  disable systemd-logind.service
-  systemctl  disable systemd-user-sessions.service
+#  systemctl  disable systemd-logind.service
+  systemctl mask systemd-logind.service systemd-random-seed systemd-user-sessions.service
 
-  history -c -w
+  history -c -w) ||
+  umount ${SD}p1
 fi
+
+systemctl --now enable ${SPI_TARGET_SERVICE}
+echo "Disabling  first boot script"
+systemctl disable first_boot.service
+echo "All good."

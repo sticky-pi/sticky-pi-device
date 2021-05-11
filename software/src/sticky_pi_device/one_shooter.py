@@ -14,6 +14,7 @@ import tempfile
 import shutil
 from sticky_pi_device.utils import device_id
 from sticky_pi_device.config_handler import ConfigHandler
+import signal
 
 GPIO.setmode(GPIO.BCM)
 
@@ -34,8 +35,9 @@ class Metadata(dict):
 
 class PiOneShooter(object):
     _max_exposure = 50000  # us ## see https://github.com/pieelab/sticky_pi/issues/39
+    _camera_timeout = 5
 
-    def __init__(self, config: ConfigHandler):
+    def __init__(self, config: ConfigHandler, dev_id = None):
         self._config = config
         self._resolution = (self._config.SPI_IM_W, self._config.SPI_IM_H)
         self._resolution_light_sens = (self._config.SPI_LIGHT_SENSOR_W, self._config.SPI_LIGHT_SENSOR_H)
@@ -45,7 +47,10 @@ class PiOneShooter(object):
                       self._config.SPI_ZOOM_H)
         self._awb_gains = (self._config.SPI_AWB_RED,
                            self._config.SPI_AWB_BLUE)
-
+        if dev_id is None:
+            self._device_id = device_id()
+        else:
+            self._device_id = dev_id
 
 
     def shoot(self, preview=False):
@@ -75,9 +80,9 @@ class PiOneShooter(object):
         tz_UTC = pytz.timezone('UTC')
         datetime_now = datetime.now(tz_UTC)
         date_str = datetime_now.strftime("%Y-%m-%d_%H-%M-%S")
-        dev_id = device_id()
-        basename = "%s.%s.jpg" % (dev_id, date_str)
-        path = os.path.join(self._config.SPI_IMAGE_DIR, dev_id, basename)
+
+        basename = "%s.%s.jpg" % (self._device_id, date_str)
+        path = os.path.join(self._config.SPI_IMAGE_DIR, self._device_id, basename)
         if os.path.exists(path):
             raise Exception('Target path already exists. NOT overwriting existing image')
         return path
@@ -96,7 +101,6 @@ class PiOneShooter(object):
         return out
 
     def _read_temp_hum(self):
-        import signal
         def handler(signum, frame):
             raise Exception("DHT timed out")
 
@@ -140,7 +144,16 @@ class PiOneShooter(object):
             camera.awb_gains = self._awb_gains
             temp_file = tempfile.mktemp(".jpg", "sticky_pi")
             try:
-                camera.capture(temp_file, quality=self._config.SPI_IM_JPEG_QUALITY)
+                def handler(signum, frame):
+                    raise Exception("Camera timed out")
+
+                signal.signal(signal.SIGALRM, handler)
+                signal.alarm(self._camera_timeout) # if no picture after some time, we kill raise an exception!
+                try:
+                    camera.capture(temp_file, quality=self._config.SPI_IM_JPEG_QUALITY)
+                finally:
+                    signal.alarm(0)
+
             except Exception as e:
                 if os.path.exists(temp_file):
                     os.remove(temp_file)

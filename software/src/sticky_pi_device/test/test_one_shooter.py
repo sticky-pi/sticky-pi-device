@@ -19,8 +19,8 @@ from sticky_pi_device.config_handler import ConfigHandler
 from sticky_pi_device.one_shooter import PiOneShooter
 
 
-logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+# logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+#                     datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
 
 class DummyCamera(object):
@@ -119,8 +119,11 @@ class DummyCamera(object):
 
 
 class DummyOneShooter(PiOneShooter):
-    def __init__(self, config, test_image=None, test_light_sensor=None):
-        super().__init__(config)
+
+    _camera_timeout = 99999
+
+    def __init__(self, config, dev_id=None, test_image=None, test_light_sensor=None):
+        super().__init__(config, dev_id)
 
         self._image_dir = '/tmp/images/'
 
@@ -128,9 +131,7 @@ class DummyOneShooter(PiOneShooter):
         self._test_light_sensor = test_light_sensor
         self._camera = None
 
-    @staticmethod
-    def _cpu_serial():
-        return "01234567"
+
 
     def power_off(self):
         logging.info("Powering device off")

@@ -1,0 +1,6 @@
+Interface=wlan0
+Connection=wireless
+Security=wpa
+IP=dhcp
+ESSID='sticky-pi-net'
+Key='sticky-pi'

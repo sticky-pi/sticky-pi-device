@@ -18,7 +18,7 @@ Instructions to assemble Sticky Pis are available on [our documentation](https:/
 Contains files and tools to build the Sticky Pi OS. Briefly, we make a local image from the stock Archlinux operating system, 
 then we transfer custom files on it before we use QEMU to spawn a virtual machine on this image. Once in the virtual machine, 
 we install dependencies and continue the configuration of the virtual image. In the end. We compress the resulting image 
-(YYYY-MM-dd_sticky_pi_rpi.img.gz) --that can be burnt and used directly. The whole process is orchestrated by a Makefile 
+(YYYY-MM-dd_sticky_pi_rpi.img.gz) -- which can be burnt and used directly. The whole process is orchestrated by a Makefile 
 
 * `src` -- a small python package, `sticky_pi_device`, that will be installed on the Raspberry Pi
 * `.env` -- definition of environment variables used at build and runtime (e.g. directory location, camera setting, ...)

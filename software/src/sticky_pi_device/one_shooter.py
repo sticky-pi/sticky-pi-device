@@ -53,14 +53,16 @@ class PiOneShooter(object):
             self._device_id = dev_id
 
 
-    def shoot(self, preview=False):
+    def shoot(self, no_save=False):
         data = Metadata(os.path.join(self._config.SPI_IMAGE_DIR, self._config.SPI_METADATA_FILENAME))
+        data["device_version"] = self._config.SPI_VERSION
         try:
             filename = self._make_file_path()
-            data.update(self._picture(filename + ".tmp", preview))
+            data.update(self._picture(filename + ".tmp", no_save))
             data.update(self._read_temp_hum())
-            self._add_light_info_exif(filename+ ".tmp", data)
-            os.rename(filename+ ".tmp", filename)
+            if not no_save:
+                self._add_light_info_exif(filename+ ".tmp", data)
+                os.rename(filename+ ".tmp", filename)
         except Exception as e:
             self._report_error(e)
             raise e
@@ -116,7 +118,7 @@ class PiOneShooter(object):
             signal.alarm(0)
             return out
 
-    def _picture(self, path, preview=False):
+    def _picture(self, path, no_save=False):
         dir = os.path.dirname(path)
         if not os.path.exists(dir):
             os.makedirs(dir)
@@ -134,7 +136,7 @@ class PiOneShooter(object):
 
             out = {'no_flash_exposure_time': camera.exposure_speed,
                    'no_flash_analog_gain': float(camera.analog_gain),
-                   'no_flash_analog_gain': float(camera.digital_gain)}
+                   'no_flash_digital_gain': float(camera.digital_gain)}
 
             # fixme makes sense to set the iso ahead, and the query exposure?
             if camera.exposure_speed > self._max_exposure:
@@ -158,7 +160,10 @@ class PiOneShooter(object):
                 if os.path.exists(temp_file):
                     os.remove(temp_file)
                 raise e
-            shutil.move(temp_file, path)
+            if not no_save:
+                shutil.move(temp_file, path)
+            else:
+                os.remove(temp_file)
         finally:
             camera.close()
         return out

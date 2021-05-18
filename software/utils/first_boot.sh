@@ -38,12 +38,13 @@ grep "^LABEL=${SPI_DRIVE_LABEL}" /etc/fstab -c || (
   echo "Partition mounted"
 )
 
-
 echo "Setting dummy time"
 systemctl --now disable systemd-timesyncd.service
 timedatectl set-time "2000-01-01 00:00:00"
 
-
+/usr/bin/take_picture.py --no-save -k
+systemctl enable ${SPI_TARGET_SERVICE}
+echo "Disabling  first boot script"
 # make the image read only if defined in env file
 if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   echo "Making read-only FS"
@@ -67,8 +68,6 @@ if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   history -c -w) ||
   umount ${SD}p1
 fi
-
-systemctl --now enable ${SPI_TARGET_SERVICE}
-echo "Disabling  first boot script"
 systemctl disable first_boot.service
+
 echo "All good."

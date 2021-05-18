@@ -27,6 +27,11 @@ if __name__ == '__main__':
                       help="Does not sync to data harvester",
                       default=False,
                       action='store_true')
+    parser.add_option("-u", "--no-save",
+                      dest="no_save",
+                      help="Does does not save the picture",
+                      default=False,
+                      action='store_true')
 
     parser.add_option("-s", "--sync-only",
                       dest="sync_only",
@@ -92,7 +97,7 @@ if __name__ == '__main__':
     sync_to_harvester = not option_dict['no_sync']
 
     try:
-        one_shooter.shoot()
+        one_shooter.shoot(option_dict["no_save"])
 
     except Exception as e:
         logging.error(e, exc_info=True)

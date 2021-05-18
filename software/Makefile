@@ -3,18 +3,21 @@ export
 
 OS_IMG_NAME:=$(shell date "+%Y-%m-%d")_sticky_pi_${SPI_ARCH}.img
 PYTHON_RESOURCES := $(shell find src -name \*.py -print)
-.PHONY: base_os custom_os device_tree
 BASE_OS_IMG_NAME:= base-${OS_IMG_NAME}
 DT_BLOB := ./os_stub/boot/dt-blob.bin
 PYTHON_PACKAGE :=./os_stub/opt/sticky_pi/sticky_pi_device.tar.gz
 NET_CONF :=./os_stub/etc/netctl/${SPI_NET_INTERFACE}
+
+.PHONY: base_os custom_os device_tree all
+all: custom_os
 
 base_os: ${BASE_OS_IMG_NAME}
 custom_os: ${OS_IMG_NAME}.gz
 device_tree: ${DT_BLOB}
 net_conf: ${NET_CONF}
 python_package: ${PYTHON_PACKAGE}
-all :${OS_IMG_NAME}.gz
+
+
 
 
 ${BASE_OS_IMG_NAME}: utils/make_base_os.sh

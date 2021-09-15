@@ -1,0 +1,25 @@
+### Module positions - created on Sat Sep 11 17:55:31 2021 ###
+### Printed by Pcbnew version kicad 5.1.10
+## Unit = mm, Angle = deg.
+## Side : All
+# Ref     Val           Package                                                PosX       PosY       Rot  Side
+BT2       Battery_Cell  BatteryHolder_Keystone_3000_1x12mm                  46.5280    -2.1560   90.0000  top
+C1        10μF         C_1206_3216Metric                                   16.5560   -13.3320  270.0000  top
+C2        0.1μF        C_1206_3216Metric                                   22.4750   -18.5000  180.0000  top
+C3        10μF         C_1206_3216Metric                                   26.5000   -12.4750  270.0000  top
+C4        10μF         C_1206_3216Metric                                   29.5100   -12.5700  270.0000  top
+C5        100nF         CP_Elec_4x4.5                                       51.3540   -21.9680    0.0000  top
+L1        2.2μH        L_Abracon_ASPI-3012S                                22.1440    -8.7600  180.0000  top
+Q1        Si2319CDS     SOT-23                                              31.7960    12.5760  180.0000  top
+R1        75k           R_2010_5025Metric                                    2.3320   -14.6020   90.0000  top
+R2        560Ω         R_2010_5025Metric                                   34.0555    -0.1240  180.0000  top
+R3        100Ω         R_2010_5025Metric                                   16.8100   -18.4120    0.0000  top
+R4        2.2k          R_2010_5025Metric                                   12.2380   -11.5540   90.0000  top
+R5        10k           R_2010_5025Metric                                   35.0980   -22.2220    0.0000  top
+R6        10k           R_2010_5025Metric                                   41.7020   -22.2220    0.0000  top
+R7        10k           R_2010_5025Metric                                   39.9240     9.0200  180.0000  top
+U2        TPL5110       SOT-23-6                                             7.9200   -13.0780    0.0000  top
+U3        TPS63002      Texas_DSC0010J_ThermalVias                          22.1440   -12.8240  270.0000  top
+U4        DS1307+       SOIC-8_3.9x4.9mm_P1.27mm                            52.3700   -15.1100  180.0000  top
+Y1        Crystal       Crystal_SMD_MicroCrystal_CM9V-T1A-2Pin_1.6x1.0mm    57.1960   -16.3800   90.0000  top
+## End

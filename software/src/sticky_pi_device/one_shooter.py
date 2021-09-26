@@ -34,7 +34,7 @@ class Metadata(dict):
 
 
 class PiOneShooter(object):
-    _max_exposure = 50000  # us ## see https://github.com/pieelab/sticky_pi/issues/39
+    _max_exposure = 100000  # us ## see https://github.com/pieelab/sticky_pi/issues/39
     _camera_timeout = 5
 
     def __init__(self, config: ConfigHandler, dev_id = None):
@@ -128,7 +128,7 @@ class PiOneShooter(object):
         try:
             logging.info('Capture')
             # warm up
-            time.sleep(1.0)
+            time.sleep(2.0)
             camera.framerate = 10
             camera.resolution = self._resolution
             camera.flash_mode = 'on'

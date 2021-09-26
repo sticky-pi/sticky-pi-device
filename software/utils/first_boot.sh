@@ -24,7 +24,9 @@ EOF
 
 partprobe $SD
 mkfs.vfat ${SD}p3
+sync
 fatlabel  ${SD}p3 ${SPI_DRIVE_LABEL}
+sync
 echo "New partition labelled"
 )
 
@@ -35,6 +37,7 @@ grep "^LABEL=${SPI_DRIVE_LABEL}" /etc/fstab -c || (
   echo "LABEL=${SPI_DRIVE_LABEL}  ${SPI_IMAGE_DIR}   vfat    defaults        0       0" > /etc/fstab &&
   mkdir -p ${SPI_IMAGE_DIR}  &&
   mount -a &&
+  sync &&
   echo "Partition mounted"
 )
 
@@ -68,6 +71,4 @@ if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   history -c -w) ||
   umount ${SD}p1
 fi
-systemctl disable first_boot.service
-
-echo "All good."
+systemctl disable first_boot.service  &&  echo "All good." && sync && reboot

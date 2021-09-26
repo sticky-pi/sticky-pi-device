@@ -23,7 +23,7 @@ class DataSyncer(object):
     # Percent. If disk space is lower than this value, after data sync, the oldest half of the data is removed!
     _min_available_disk_space = 10
     _upload_pool_size = 4
-
+    _interface_timeout = 5 #s
     def __init__(self, config: ConfigHandler, logfile_path, dev_id = None):
         self._config = config
         if dev_id is None:
@@ -33,9 +33,12 @@ class DataSyncer(object):
         self._logfile_path = logfile_path
     def sync(self):
         # typically, interface is up 5s before host is ping able
-        if not self._is_any_net_interface_up():
-            logging.info("No network interface, not syncing")
-            return
+        start = time.time()
+        while not self._is_any_net_interface_up():
+            time.sleep(1)
+            if time.time()  - start > self._interface_timeout:
+                logging.info("No network interface, not syncing")
+                return
         if not self._ping_harvester():
             raise NoHostOrNetworkException(f"Cannot reach host {self._config.SPI_HARVESTER_HOSTNAME}")
 
@@ -47,7 +50,7 @@ class DataSyncer(object):
         response = os.system("ip a | grep ^[0-9] | grep 'state UP' -q")
         return response == 0
 
-    def _ping_harvester(self, timeout = 10):
+    def _ping_harvester(self, timeout = 15):
         host = self._config.SPI_HARVESTER_HOSTNAME
         start = time.time()
         while time.time() - start < timeout:

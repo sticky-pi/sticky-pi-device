@@ -24,7 +24,6 @@ FIND_LIBRARY(BCM_HOST_LIBRARY bcm_host /opt/vc/lib)
 set (COMMON_SOURCES
    RaspiCamControl.c
    RaspiPreview.c
-   RaspiCommonSettings.c
    RaspiHelpers.c)
 
 add_executable(raspistill  ${COMMON_SOURCES}  RaspiStill.c)

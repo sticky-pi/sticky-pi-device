@@ -88,6 +88,7 @@ void raspicamcontrol_set_defaults(RASPICAM_CAMERA_PARAMETERS *params)
    params->stereo_mode.mode = MMAL_STEREOSCOPIC_MODE_NONE;
    params->stereo_mode.decimate = MMAL_FALSE;
    params->stereo_mode.swap_eyes = MMAL_FALSE;
+   params->flashMode = MMAL_PARAM_FLASH_ON;
 }
 
 /**
@@ -140,10 +141,17 @@ int raspicamcontrol_set_all_parameters(MMAL_COMPONENT_T *camera, const RASPICAM_
    result += raspicamcontrol_set_video_stabilisation(camera, params->videoStabilisation);
    result += raspicamcontrol_set_exposure_compensation(camera, params->exposureCompensation);
    result += raspicamcontrol_set_exposure_mode(camera, params->exposureMode);
+//   result += raspicamcontrol_set_flash(camera, params->flashMode);
+   result += raspicamcontrol_set_flash(camera, params->flashMode);
+
    result += raspicamcontrol_set_flicker_avoid_mode(camera, params->flickerAvoidMode);
    result += raspicamcontrol_set_metering_mode(camera, params->exposureMeterMode);
    result += raspicamcontrol_set_awb_mode(camera, params->awbMode);
    result += raspicamcontrol_set_awb_gains(camera, params->awb_gains_r, params->awb_gains_b);
+
+
+
+
    result += raspicamcontrol_set_imageFX(camera, params->imageEffect);
    result += raspicamcontrol_set_colourFX(camera, &params->colourEffects);
    //result += raspicamcontrol_set_thumbnail_parameters(camera, &params->thumbnailConfig);  TODO Not working for some reason
@@ -377,13 +385,84 @@ int raspicamcontrol_set_exposure_compensation(MMAL_COMPONENT_T *camera, int exp_
  */
 int raspicamcontrol_set_exposure_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_EXPOSUREMODE_T mode)
 {
-   MMAL_PARAMETER_EXPOSUREMODE_T exp_mode = {{MMAL_PARAMETER_EXPOSURE_MODE,sizeof(exp_mode)}, mode};
+   MMAL_PARAMETER_EXPOSUREMODE_T exp_mode = {{MMAL_PARAMETER_EXPOSURE_MODE, sizeof(exp_mode)}, mode};
+
+    printf("MMAL_PARAMETER_EXPOSUREMODE_T: %i\n", MMAL_PARAMETER_EXPOSURE_MODE);
+    printf("mode: %i\n", mode);
+    printf("MMAL_PARAM_EXPOSUREMODE_AUTO: %i\n", MMAL_PARAM_EXPOSUREMODE_AUTO);
 
    if (!camera)
       return 1;
 
-   return mmal_status_to_int(mmal_port_parameter_set(camera->control, &exp_mode.hdr));
+     int out =  mmal_status_to_int(mmal_port_parameter_set(camera->control, &exp_mode.hdr));
+    printf("OUT1: %i\n", out);
+   return out;
 }
+
+int raspicamcontrol_set_flash(MMAL_COMPONENT_T *camera, MMAL_PARAM_FLASH_T mode)
+{
+   MMAL_PARAMETER_FLASH_T flash_mode = {{MMAL_PARAMETER_FLASH, sizeof(MMAL_PARAMETER_FLASH_T)}, mode};
+//   MMAL_PARAMETER_FLASH_T flash_mode = {{MMAL_PARAMETER_FLASH, sizeof(MMAL_PARAMETER_FLASH_T)}, MMAL_PARAM_FLASH_ON};
+
+
+   if (!camera)
+      return 1;
+
+     int out =  mmal_status_to_int(mmal_port_parameter_set(camera->control, &flash_mode.hdr));
+    printf("OUT2: %i\n", out);
+   return out;
+}
+
+
+
+
+//int raspicamcontrol_set_flash(MMAL_COMPONENT_T *camera, MMAL_PARAM_EXPOSUREMODE_T mode)
+//{
+//
+//   MMAL_PARAMETER_EXPOSUREMODE_T _mode = {{MMAL_PARAMETER_EXPOSURE_MODE, sizeof(mode)}, MMAL_PARAM_EXPOSUREMODE_NIGHT};
+////
+////    printf("MMAL_PARAMETER_EXPOSUREMODE_T: %i\n", MMAL_PARAMETER_EXPOSURE_MODE);
+////    printf("mode: %i\n", mode);
+////    printf("MMAL_PARAM_EXPOSUREMODE_AUTO: %i\n", MMAL_PARAM_EXPOSUREMODE_AUTO);
+//
+////    MMAL_PARAMETER_FLASH_T flash_mode = {{MMAL_PARAMETER_FLASH, sizeof(MMAL_PARAM_FLASH_T)}, MMAL_PARAM_FLASH_ON};
+//
+//
+//   if (!camera)
+//      return 1;
+//    int out =  mmal_status_to_int(mmal_port_parameter_set(camera->control, &_mode.hdr));
+//
+////     int out =  mmal_status_to_int(mmal_port_parameter_set(camera->control, &exp_mode.hdr));
+//    printf("OUT2: %i\n", out);
+//   return out;
+//}
+
+
+//
+//
+//int raspicamcontrol_set_flash(MMAL_COMPONENT_T *camera, MMAL_PARAM_FLASH_T mode)
+//{
+//
+////    printf("MMAL_PARAMETER_FLASH: %i\n", MMAL_PARAMETER_FLASH);
+////    printf("mode: %i\n", mode);
+////    printf("MMAL_PARAM_FLASH_ON: %i\n", MMAL_PARAM_FLASH_ON);
+//
+//   MMAL_PARAMETER_EXPOSUREMODE_T exp_mode = {{MMAL_PARAMETER_EXPOSURE_MODE,sizeof(MMAL_PARAM_EXPOSUREMODE_T)},  MMAL_PARAM_EXPOSUREMODE_AUTO};
+//
+//   if (!camera)
+//      return 1;
+//
+//   int out =  mmal_status_to_int(mmal_port_parameter_set(camera->control, &exp_mode.hdr));
+//
+////   vcos_sleep(1000);
+////   MMAL_PARAMETER_FLASH_T flash_mode = {{MMAL_PARAMETER_FLASH, sizeof(MMAL_PARAM_FLASH_T)}, mode};
+////   if (!camera)
+////      return 1;
+////   int out =  mmal_status_to_int(mmal_port_parameter_set_boolean(camera->control, MMAL_PARAMETER_FLASH_REQUIRED, 1));
+////   out +=  mmal_status_to_int(mmal_port_parameter_set(camera->control, &flash_mode.hdr));
+//   printf("OUT2: %i\n", out);
+//   return out;
+//}
 
 
 /**
@@ -406,6 +485,7 @@ int raspicamcontrol_set_flicker_avoid_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_
 
    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &fl_mode.hdr));
 }
+
 
 
 /**
@@ -837,6 +917,21 @@ int raspicamcontrol_set_stereo_mode(MMAL_PORT_T *port, MMAL_PARAMETER_STEREOSCOP
    return mmal_status_to_int(mmal_port_parameter_set(port, &stereo.hdr));
 }
 
+
+
+//int raspicamcontrol_set_metering_mode(MMAL_COMPONENT_T *camera, MMAL_PARAM_EXPOSUREMETERINGMODE_T m_mode )
+//{
+//   MMAL_PARAMETER_EXPOSUREMETERINGMODE_T meter_mode = {{MMAL_PARAMETER_EXP_METERING_MODE,sizeof(meter_mode)},
+//      m_mode
+//   };
+//   if (!camera)
+//      return 1;
+//
+//   return mmal_status_to_int(mmal_port_parameter_set(camera->control, &meter_mode.hdr));
+//}
+//
+
+
 int raspicamcontrol_set_gains(MMAL_COMPONENT_T *camera, float analog, float digital)
 {
    MMAL_RATIONAL_T rational = {0,65536};
@@ -854,6 +949,8 @@ int raspicamcontrol_set_gains(MMAL_COMPONENT_T *camera, float analog, float digi
    status = mmal_port_parameter_set_rational(camera->control, MMAL_PARAMETER_DIGITAL_GAIN, rational);
    return mmal_status_to_int(status);
 }
+
+
 
 /**
  * Asked GPU how much memory it has allocated

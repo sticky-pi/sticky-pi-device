@@ -57,6 +57,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 #include <errno.h>
 #include <sysexits.h>
+#include <assert.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+
 
 #include "bcm_host.h"
 #include "interface/vcos/vcos.h"
@@ -70,16 +76,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/mmal/util/mmal_connection.h"
 #include "interface/mmal/mmal_parameters_camera.h"
 
-#include "RaspiCommonSettings.h"
+
 #include "RaspiCamControl.h"
 #include "RaspiPreview.h"
-
 #include "RaspiHelpers.h"
+#include "jsmn.h"
 
-// TODO
-//#include "libgps_loader.h"
-
-//#include "RaspiGPS.h"
 
 #include <semaphore.h>
 #include <math.h>
@@ -102,35 +104,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX_USER_EXIF_TAGS      32
 #define MAX_EXIF_PAYLOAD_LENGTH 128
 
+#define CAMERA_NUM 0
+#define SENSOR_MODE 0
 
+// fixme get these from env
 #define SPI_IM_W 4056
 #define SPI_IM_H 3040
-/// Frame advance method
-enum
-{
-   FRAME_NEXT_SINGLE,
-   FRAME_NEXT_TIMELAPSE,
-   FRAME_NEXT_KEYPRESS,
-   FRAME_NEXT_FOREVER,
-   FRAME_NEXT_GPIO,
-   FRAME_NEXT_SIGNAL,
-   FRAME_NEXT_IMMEDIATELY
-};
+#define SPI_IM_JPEG_QUALITY 12
+//#define SPI_IMAGE_DIR  "/sticky_pi_data/"
+#define SPI_IMAGE_DIR  "/tmp/"
+#define SPI_VERSION "3.0.0"
+
 
 /// Amount of time before first image taken to allow settling of
 /// exposure etc. in milliseconds.
 #define CAMERA_SETTLE_TIME       1000
 
+
+struct stat st = {0};
+
 /** Structure containing all state information for the current run
  */
 typedef struct
 {
-   RASPICOMMONSETTINGS_PARAMETERS common_settings;     /// Common settings
-   int quality;                        /// JPEG quality setting (1-100)
+//   RASPICOMMONSETTINGS_PARAMETERS common_settings;     /// Common settings
+   char camera_name[MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN]; // Name of the camera sensor
+//   time_t *rawtime;
+   struct tm *timeinfo;
    char *linkname;                     /// filename of output file
    MMAL_FOURCC_T encoding;             /// Encoding to use for the output file.
-   const char *exifTags[MAX_USER_EXIF_TAGS]; /// Array of pointers to tags supplied from the command line
-   int numExifTags;                    /// Number of supplied tags
+//   const char *exifTags[MAX_USER_EXIF_TAGS]; /// Array of pointers to tags supplied from the command line
+//   int numExifTags;                    /// Number of supplied tags
    int restart_interval;               /// JPEG restart interval. 0 for none.
    RASPIPREVIEW_PARAMETERS preview_parameters;    /// Preview setup parameters
    RASPICAM_CAMERA_PARAMETERS camera_parameters; /// Camera setup parameters
@@ -151,7 +155,7 @@ typedef struct
    RASPISTILL_STATE *pstate;            /// pointer to our state in case required in callback
 } PORT_USERDATA;
 
-static void store_exif_tag(RASPISTILL_STATE *state, const char *exif_tag);
+//static void store_exif_tag(RASPISTILL_STATE *state, const char *exif_tag);
 
 
 /**
@@ -167,9 +171,15 @@ static void default_status(RASPISTILL_STATE *state)
       return;
    }
 
+
+   time_t rawtime;
+   time(&rawtime);
+
+
    memset(state, 0, sizeof(*state));
-   raspicommonsettings_set_defaults(&state->common_settings);
-   state->quality = 12;
+   strncpy(state->camera_name, "(Unknown)", MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN);
+//   raspicommonsettings_set_defaults(&state->common_settings);
+   state->timeinfo = localtime(&rawtime);
    state->linkname = NULL;
    state->camera_component = NULL;
    state->encoder_component = NULL;
@@ -177,15 +187,11 @@ static void default_status(RASPISTILL_STATE *state)
    state->encoder_connection = NULL;
    state->encoder_pool = NULL;
    state->encoding = MMAL_ENCODING_JPEG;
-   state->numExifTags = 0;
-
-
+//   state->numExifTags = 0;
    // Setup preview window defaults
    state->preview_parameters.wantFullScreenPreview = 0;
    state->preview_parameters.preview_component = NULL;
    state->preview_parameters.display_num = -1;
-
-   // Set up the camera_parameters to default
    raspicamcontrol_set_defaults(&state->camera_parameters);
 }
 
@@ -217,18 +223,6 @@ static void dump_status(RASPISTILL_STATE *state)
    fprintf(stderr, "\n\n");
 
 
-      if (state->numExifTags)
-      {
-         fprintf(stderr, "User supplied EXIF tags :\n");
-
-         for (i=0; i<state->numExifTags; i++)
-         {
-            fprintf(stderr, "%s", state->exifTags[i]);
-            if (i != state->numExifTags-1)
-               fprintf(stderr, ",");
-         }
-         fprintf(stderr, "\n\n");
-      }
 
 
    raspicamcontrol_dump_parameters(&state->camera_parameters);
@@ -329,7 +323,9 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
    }
 
    MMAL_PARAMETER_INT32_T camera_num =
-   {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_num)}, state->common_settings.cameraNum};
+   {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_num)}, CAMERA_NUM};
+
+
 
    status = mmal_port_parameter_set(camera->control, &camera_num.hdr);
 
@@ -346,7 +342,7 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
       goto error;
    }
 
-   status = mmal_port_parameter_set_uint32(camera->control, MMAL_PARAMETER_CAMERA_CUSTOM_SENSOR_CONFIG, state->common_settings.sensor_mode);
+   status = mmal_port_parameter_set_uint32(camera->control, MMAL_PARAMETER_CAMERA_CUSTOM_SENSOR_CONFIG, SENSOR_MODE);
 
    if (status != MMAL_SUCCESS)
    {
@@ -495,15 +491,6 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
       goto error;
    }
 
-//   if (state->useGL)
-//   {
-//      status = raspitex_configure_preview_port(&state->raspitex_state, preview_port);
-//      if (status != MMAL_SUCCESS)
-//      {
-//         fprintf(stderr, "Failed to configure preview port for GL rendering");
-//         goto error;
-//      }
-//   }
 
    state->camera_component = camera;
    return status;
@@ -589,7 +576,7 @@ static MMAL_STATUS_T create_encoder_component(RASPISTILL_STATE *state)
    }
 
    // Set the JPEG quality level
-   status = mmal_port_parameter_set_uint32(encoder_output, MMAL_PARAMETER_JPEG_Q_FACTOR, state->quality);
+   status = mmal_port_parameter_set_uint32(encoder_output, MMAL_PARAMETER_JPEG_Q_FACTOR, SPI_IM_JPEG_QUALITY);
 
    if (status != MMAL_SUCCESS)
    {
@@ -695,6 +682,28 @@ static MMAL_STATUS_T add_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
    return status;
 }
 
+
+char * custom_exif_data(){
+    double lat = 0;
+    double lng = 0;
+    float alt = 0;
+    float hum = -1;
+    float temp = -300;
+    float no_flash_exposure_time;
+    float no_flash_analog_gain;
+    float no_flash_digital_gain;
+// read the metadata file to get lat lng alt.
+// if failure lat/lng,alt -> null;
+
+// read DHT using kernel module
+// if failure hum/temp-> null;
+
+
+
+
+}
+
+
 /**
  * Add a basic set of EXIF tags to the capture
  * Make, Time etc
@@ -704,28 +713,26 @@ static MMAL_STATUS_T add_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
  */
 static void add_exif_tags(RASPISTILL_STATE *state)
 {
-   time_t rawtime;
-   struct tm *timeinfo;
    char model_buf[32];
    char time_buf[32];
    char exif_buf[128];
    int i;
 
-   snprintf(model_buf, 32, "IFD0.Model=RP_%s", state->common_settings.camera_name);
+   snprintf(model_buf, 32, "IFD0.Model=RP_%s", state->camera_name);
    add_exif_tag(state, model_buf);
-   add_exif_tag(state, "IFD0.Make=RaspberryPi");
+   add_exif_tag(state, "IFD0.Make=StickyPi");
 
-   time(&rawtime);
-   timeinfo = localtime(&rawtime);
+
+
 
    snprintf(time_buf, sizeof(time_buf),
             "%04d:%02d:%02d %02d:%02d:%02d",
-            timeinfo->tm_year+1900,
-            timeinfo->tm_mon+1,
-            timeinfo->tm_mday,
-            timeinfo->tm_hour,
-            timeinfo->tm_min,
-            timeinfo->tm_sec);
+            state->timeinfo->tm_year+1900,
+            state->timeinfo->tm_mon+1,
+            state->timeinfo->tm_mday,
+            state->timeinfo->tm_hour,
+            state->timeinfo->tm_min,
+            state->timeinfo->tm_sec);
 
    snprintf(exif_buf, sizeof(exif_buf), "EXIF.DateTimeDigitized=%s", time_buf);
    add_exif_tag(state, exif_buf);
@@ -736,17 +743,6 @@ static void add_exif_tags(RASPISTILL_STATE *state)
    snprintf(exif_buf, sizeof(exif_buf), "IFD0.DateTime=%s", time_buf);
    add_exif_tag(state, exif_buf);
 
-
-
-   // Now send any user supplied tags
-
-   for (i=0; i<state->numExifTags && i < MAX_USER_EXIF_TAGS; i++)
-   {
-      if (state->exifTags[i])
-      {
-         add_exif_tag(state, state->exifTags[i]);
-      }
-   }
 }
 
 /**
@@ -760,14 +756,14 @@ static void add_exif_tags(RASPISTILL_STATE *state)
  * @param exif_tag EXIF tag string
  *
  */
-static void store_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
-{
-   if (state->numExifTags < MAX_USER_EXIF_TAGS)
-   {
-      state->exifTags[state->numExifTags] = exif_tag;
-      state->numExifTags++;
-   }
-}
+//static void store_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
+//{
+//   if (state->numExifTags < MAX_USER_EXIF_TAGS)
+//   {
+//      state->exifTags[state->numExifTags] = exif_tag;
+//      state->numExifTags++;
+//   }
+//}
 
 /**
  * Allocates and generates a filename based on the
@@ -786,6 +782,7 @@ MMAL_STATUS_T create_filenames(char** finalName, char** tempName, char * pattern
 {
    *finalName = NULL;
    *tempName = NULL;
+
    if (0 > asprintf(finalName, pattern) ||
          0 > asprintf(tempName, "%s~", *finalName))
    {
@@ -832,6 +829,51 @@ static void rename_file(RASPISTILL_STATE *state, FILE *output_file,
 }
 
 
+
+
+static void set_device_id(char *device_id){
+    FILE *fp = fopen("/proc/cpuinfo", "r");
+    assert(fp != NULL);
+    size_t n = 0;
+    char *line = NULL;
+    char first_six_char[6+1];
+    char match_word[] = "Serial";
+
+    while (getline(&line, &n, fp) > 0) {
+            strncpy(first_six_char, line, 6);
+            if(strcmp(first_six_char, match_word) == 0){
+                strncpy(device_id, line + 18, 8);
+            }
+    }
+    free(line);
+    fclose(fp);
+
+}
+static void * set_picture_path(RASPISTILL_STATE *state, char *picture_path){
+    char device_name[8+1] = "";
+    char datetime_str[32] = "";
+    char time_buf[32] = "";
+//    memset (device_name,'\0',9);
+
+   set_device_id(device_name);
+   assert(device_name != "");
+
+   snprintf(datetime_str, sizeof(time_buf),
+            "%04d-%02d-%02d_%02d-%02d-%02d",
+            state->timeinfo->tm_year+1900,
+            state->timeinfo->tm_mon+1,
+            state->timeinfo->tm_mday,
+            state->timeinfo->tm_hour,
+            state->timeinfo->tm_min,
+            state->timeinfo->tm_sec);
+
+    snprintf(picture_path,128, "%s/%s",SPI_IMAGE_DIR, device_name);
+    if (stat(picture_path, &st) == -1){
+        mkdir(picture_path, 0755);
+    }
+    snprintf(picture_path,128, "%s/%s/%s.%s.jpg",SPI_IMAGE_DIR, device_name, device_name ,datetime_str);
+}
+
 /**
  * main
  */
@@ -864,10 +906,14 @@ int main(int argc, const char **argv)
 
 
    default_status(&state);
-   state.common_settings.filename = "/tmp/test.jpg";
+
+
+   char filename[128] = "";
+   set_picture_path(&state, filename);
+   printf("%s\n",filename);
 
    // Setup for sensor specific parameters
-   get_sensor_defaults(state.common_settings.cameraNum, state.common_settings.camera_name);
+   get_sensor_defaults(CAMERA_NUM, state.camera_name);
 
 
    // OK, we have a nice set of parameters. Now set up our components
@@ -947,11 +993,11 @@ int main(int argc, const char **argv)
             vcos_sleep(CAMERA_SETTLE_TIME);
 
 
-                printf("%s\n", state.common_settings.filename);
+                printf("FILENAME HERE: %s\n", filename);
                // Open the file
 
                  vcos_assert(use_filename == NULL && final_filename == NULL);
-                 status = create_filenames(&final_filename, &use_filename, state.common_settings.filename);
+                 status = create_filenames(&final_filename, &use_filename, filename);
                  if (status  != MMAL_SUCCESS)
                  {
                     vcos_log_error("Unable to create filenames");

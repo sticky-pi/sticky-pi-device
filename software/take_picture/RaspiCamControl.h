@@ -146,6 +146,9 @@ typedef struct raspicam_camera_parameters_s
    MMAL_PARAM_EXPOSUREMODE_T exposureMode;
    MMAL_PARAM_EXPOSUREMETERINGMODE_T exposureMeterMode;
    MMAL_PARAM_AWBMODE_T awbMode;
+
+   MMAL_PARAM_FLASH_T flashMode;
+
    MMAL_PARAM_IMAGEFX_T imageEffect;
    MMAL_PARAMETER_IMAGEFX_PARAMETERS_T imageEffectsParameters;
    MMAL_PARAM_COLOURFX_T colourEffects;
@@ -173,6 +176,7 @@ typedef struct raspicam_camera_parameters_s
    float analog_gain;         // Analog gain
    float digital_gain;        // Digital gain
 
+
    int settings;
 } RASPICAM_CAMERA_PARAMETERS;
 
@@ -183,6 +187,10 @@ typedef enum
 
 
 void raspicamcontrol_check_configuration(int min_gpu_mem);
+
+int raspicamcontrol_parse_cmdline(RASPICAM_CAMERA_PARAMETERS *params, const char *arg1, const char *arg2);
+void raspicamcontrol_display_help();
+int raspicamcontrol_cycle_test(MMAL_COMPONENT_T *camera);
 
 int raspicamcontrol_set_all_parameters(MMAL_COMPONENT_T *camera, const RASPICAM_CAMERA_PARAMETERS *params);
 int raspicamcontrol_get_all_parameters(MMAL_COMPONENT_T *camera, RASPICAM_CAMERA_PARAMETERS *params);
@@ -220,6 +228,9 @@ int raspicamcontrol_set_annotate(MMAL_COMPONENT_T *camera, const int bitmask, co
 int raspicamcontrol_set_stereo_mode(MMAL_PORT_T *port, MMAL_PARAMETER_STEREOSCOPIC_MODE_T *stereo_mode);
 int raspicamcontrol_set_gains(MMAL_COMPONENT_T *camera, float analog, float digital);
 int raspicamcontrol_set_focus_window(MMAL_COMPONENT_T *camera, int focus_window);
+
+int raspicamcontrol_set_flash(MMAL_COMPONENT_T *camera, MMAL_PARAM_FLASH_T mode);
+//int raspicamcontrol_set_flash(MMAL_COMPONENT_T *camera, MMAL_PARAM_FLASH_T mode);
 
 //Individual getting functions
 int raspicamcontrol_get_saturation(MMAL_COMPONENT_T *camera);

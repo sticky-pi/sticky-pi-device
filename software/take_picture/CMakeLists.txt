@@ -23,7 +23,6 @@ FIND_LIBRARY(BCM_HOST_LIBRARY bcm_host /opt/vc/lib)
 
 set (COMMON_SOURCES
    RaspiCamControl.c
-   RaspiCLI.c
    RaspiPreview.c
    RaspiCommonSettings.c
    RaspiHelpers.c)

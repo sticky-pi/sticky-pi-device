@@ -73,8 +73,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "RaspiCommonSettings.h"
 #include "RaspiCamControl.h"
 #include "RaspiPreview.h"
-#include "RaspiCLI.h"
-//#include "RaspiTex.h"
+
 #include "RaspiHelpers.h"
 
 // TODO
@@ -103,6 +102,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX_USER_EXIF_TAGS      32
 #define MAX_EXIF_PAYLOAD_LENGTH 128
 
+
+#define SPI_IM_W 4056
+#define SPI_IM_H 3040
 /// Frame advance method
 enum
 {
@@ -124,41 +126,20 @@ enum
 typedef struct
 {
    RASPICOMMONSETTINGS_PARAMETERS common_settings;     /// Common settings
-   int timeout;                        /// Time taken before frame is grabbed and app then shuts down. Units are milliseconds
    int quality;                        /// JPEG quality setting (1-100)
-   int wantRAW;                        /// Flag for whether the JPEG metadata also contains the RAW bayer image
    char *linkname;                     /// filename of output file
-   int frameStart;                     /// First number of frame output counter
-   MMAL_PARAM_THUMBNAIL_CONFIG_T thumbnailConfig;
-   int demoMode;                       /// Run app in demo mode
-   int demoInterval;                   /// Interval between camera settings changes
    MMAL_FOURCC_T encoding;             /// Encoding to use for the output file.
    const char *exifTags[MAX_USER_EXIF_TAGS]; /// Array of pointers to tags supplied from the command line
    int numExifTags;                    /// Number of supplied tags
-   int enableExifTags;                 /// Enable/Disable EXIF tags in output
-   int timelapse;                      /// Delay between each picture in timelapse mode. If 0, disable timelapse
-   int fullResPreview;                 /// If set, the camera preview port runs at capture resolution. Reduces fps.
-   int frameNextMethod;                /// Which method to use to advance to next frame
-   int useGL;                          /// Render preview using OpenGL
-   int glCapture;                      /// Save the GL frame-buffer instead of camera output
-   int burstCaptureMode;               /// Enable burst mode
-   int datetime;                       /// Use DateTime instead of frame#
-   int timestamp;                      /// Use timestamp instead of frame#
    int restart_interval;               /// JPEG restart interval. 0 for none.
-
    RASPIPREVIEW_PARAMETERS preview_parameters;    /// Preview setup parameters
    RASPICAM_CAMERA_PARAMETERS camera_parameters; /// Camera setup parameters
-
    MMAL_COMPONENT_T *camera_component;    /// Pointer to the camera component
    MMAL_COMPONENT_T *encoder_component;   /// Pointer to the encoder component
    MMAL_COMPONENT_T *null_sink_component; /// Pointer to the null sink component
    MMAL_CONNECTION_T *preview_connection; /// Pointer to the connection from camera to preview
    MMAL_CONNECTION_T *encoder_connection; /// Pointer to the connection from camera to encoder
-
    MMAL_POOL_T *encoder_pool; /// Pointer to the pool of buffers used by encoder output port
-
-   //RASPITEX_STATE raspitex_state; /// GL renderer state and parameters
-
 } RASPISTILL_STATE;
 
 /** Struct used to pass information in encoder port userdata to callback
@@ -171,88 +152,6 @@ typedef struct
 } PORT_USERDATA;
 
 static void store_exif_tag(RASPISTILL_STATE *state, const char *exif_tag);
-
-/// Command ID's and Structure defining our command line options
-enum
-{
-   CommandQuality,
-   CommandRaw,
-   CommandTimeout,
-   CommandThumbnail,
-   CommandDemoMode,
-   CommandEncoding,
-   CommandExifTag,
-   CommandTimelapse,
-   CommandFullResPreview,
-   CommandLink,
-   CommandKeypress,
-   CommandSignal,
-   CommandGL,
-   CommandGLCapture,
-   CommandBurstMode,
-   CommandDateTime,
-   CommandTimeStamp,
-   CommandFrameStart,
-   CommandRestartInterval,
-};
-
-static COMMAND_LIST cmdline_commands[] =
-{
-   { CommandQuality, "-quality",    "q",  "Set jpeg quality <0 to 100>", 1 },
-   { CommandRaw,     "-raw",        "r",  "Add raw bayer data to jpeg metadata", 0 },
-   { CommandLink,    "-latest",     "l",  "Link latest complete image to filename <filename>", 1},
-   { CommandTimeout, "-timeout",    "t",  "Time (in ms) before takes picture and shuts down (if not specified, set to 5s)", 1 },
-   { CommandThumbnail,"-thumb",     "th", "Set thumbnail parameters (x:y:quality) or none", 1},
-   { CommandDemoMode,"-demo",       "d",  "Run a demo mode (cycle through range of camera options, no capture)", 0},
-   { CommandEncoding,"-encoding",   "e",  "Encoding to use for output file (jpg, bmp, gif, png)", 1},
-   { CommandExifTag, "-exif",       "x",  "EXIF tag to apply to captures (format as 'key=value') or none", 1},
-   { CommandTimelapse,"-timelapse", "tl", "Timelapse mode. Takes a picture every <t>ms. %d == frame number (Try: -o img_%04d.jpg)", 1},
-   { CommandFullResPreview,"-fullpreview","fp", "Run the preview using the still capture resolution (may reduce preview fps)", 0},
-   { CommandKeypress,"-keypress",   "k",  "Wait between captures for a ENTER, X then ENTER to exit", 0},
-   { CommandSignal,  "-signal",     "s",  "Wait between captures for a SIGUSR1 or SIGUSR2 from another process", 0},
-   { CommandGL,      "-gl",         "g",  "Draw preview to texture instead of using video render component", 0},
-   { CommandGLCapture, "-glcapture","gc", "Capture the GL frame-buffer instead of the camera image", 0},
-   { CommandBurstMode, "-burst",    "bm", "Enable 'burst capture mode'", 0},
-   { CommandDateTime,  "-datetime",  "dt", "Replace output pattern (%d) with DateTime (MonthDayHourMinSec)", 0},
-   { CommandTimeStamp, "-timestamp", "ts", "Replace output pattern (%d) with unix timestamp (seconds since 1970)", 0},
-   { CommandFrameStart,"-framestart","fs",  "Starting frame number in output pattern(%d)", 1},
-   { CommandRestartInterval, "-restart","rs","JPEG Restart interval (default of 0 for none)", 1},
-};
-
-static int cmdline_commands_size = sizeof(cmdline_commands) / sizeof(cmdline_commands[0]);
-
-static struct
-{
-   char *format;
-   MMAL_FOURCC_T encoding;
-} encoding_xref[] =
-{
-   {"jpg", MMAL_ENCODING_JPEG},
-   {"bmp", MMAL_ENCODING_BMP},
-   {"gif", MMAL_ENCODING_GIF},
-   {"png", MMAL_ENCODING_PNG},
-   {"ppm", MMAL_ENCODING_PPM},
-   {"tga", MMAL_ENCODING_TGA}
-};
-
-static int encoding_xref_size = sizeof(encoding_xref) / sizeof(encoding_xref[0]);
-
-
-static struct
-{
-   char *description;
-   int nextFrameMethod;
-} next_frame_description[] =
-{
-   {"Single capture",         FRAME_NEXT_SINGLE},
-   {"Capture on timelapse",   FRAME_NEXT_TIMELAPSE},
-   {"Capture on keypress",    FRAME_NEXT_KEYPRESS},
-   {"Run forever",            FRAME_NEXT_FOREVER},
-   {"Capture on GPIO",        FRAME_NEXT_GPIO},
-   {"Capture on signal",      FRAME_NEXT_SIGNAL},
-};
-
-static int next_frame_description_size = sizeof(next_frame_description) / sizeof(next_frame_description[0]);
 
 
 /**
@@ -269,20 +168,9 @@ static void default_status(RASPISTILL_STATE *state)
    }
 
    memset(state, 0, sizeof(*state));
-
    raspicommonsettings_set_defaults(&state->common_settings);
-
-   state->timeout = -1; // replaced with 5000ms later if unset
    state->quality = 12;
-   state->wantRAW = 0;
    state->linkname = NULL;
-   state->frameStart = 0;
-   state->thumbnailConfig.enable = 1;
-   state->thumbnailConfig.width = 64;
-   state->thumbnailConfig.height = 48;
-   state->thumbnailConfig.quality = 35;
-   state->demoMode = 0;
-   state->demoInterval = 250; // ms
    state->camera_component = NULL;
    state->encoder_component = NULL;
    state->preview_connection = NULL;
@@ -290,25 +178,15 @@ static void default_status(RASPISTILL_STATE *state)
    state->encoder_pool = NULL;
    state->encoding = MMAL_ENCODING_JPEG;
    state->numExifTags = 0;
-   state->enableExifTags = 1;
-   state->timelapse = 0;
-   state->fullResPreview = 0;
-   state->frameNextMethod = FRAME_NEXT_SINGLE;
-   state->useGL = 0;
-   state->glCapture = 0;
-   state->burstCaptureMode=0;
-   state->datetime = 0;
-   state->timestamp = 0;
-   state->restart_interval = 0;
+
 
    // Setup preview window defaults
-   raspipreview_set_defaults(&state->preview_parameters);
+   state->preview_parameters.wantFullScreenPreview = 0;
+   state->preview_parameters.preview_component = NULL;
+   state->preview_parameters.display_num = -1;
 
    // Set up the camera_parameters to default
    raspicamcontrol_set_defaults(&state->camera_parameters);
-
-   // Set initial GL preview state
-   //raspitex_set_defaults(&state->raspitex_state);
 }
 
 /**
@@ -326,14 +204,7 @@ static void dump_status(RASPISTILL_STATE *state)
       return;
    }
 
-   raspicommonsettings_dump_parameters(&state->common_settings);
 
-   fprintf(stderr, "Quality %d, Raw %s\n", state->quality, state->wantRAW ? "yes" : "no");
-   fprintf(stderr, "Thumbnail enabled %s, width %d, height %d, quality %d\n",
-           state->thumbnailConfig.enable ? "Yes":"No", state->thumbnailConfig.width,
-           state->thumbnailConfig.height, state->thumbnailConfig.quality);
-
-   fprintf(stderr, "Time delay %d, Timelapse %d\n", state->timeout, state->timelapse);
    fprintf(stderr, "Link to latest frame enabled ");
    if (state->linkname)
    {
@@ -343,18 +214,9 @@ static void dump_status(RASPISTILL_STATE *state)
    {
       fprintf(stderr, " no\n");
    }
-   fprintf(stderr, "Full resolution preview %s\n", state->fullResPreview ? "Yes": "No");
-
-   fprintf(stderr, "Capture method : ");
-   for (i=0; i<next_frame_description_size; i++)
-   {
-      if (state->frameNextMethod == next_frame_description[i].nextFrameMethod)
-         fprintf(stderr, "%s", next_frame_description[i].description);
-   }
    fprintf(stderr, "\n\n");
 
-   if (state->enableExifTags)
-   {
+
       if (state->numExifTags)
       {
          fprintf(stderr, "User supplied EXIF tags :\n");
@@ -367,321 +229,11 @@ static void dump_status(RASPISTILL_STATE *state)
          }
          fprintf(stderr, "\n\n");
       }
-   }
-   else
-      fprintf(stderr, "EXIF tags disabled\n");
 
-   raspipreview_dump_parameters(&state->preview_parameters);
+
    raspicamcontrol_dump_parameters(&state->camera_parameters);
 }
 
-/**
- * Display usage information for the application to stdout
- *
- * @param app_name String to display as the application name
- */
-static void application_help_message(char *app_name)
-{
-   fprintf(stdout, "Runs camera for specific time, and take JPG capture at end if requested\n\n");
-   fprintf(stdout, "usage: %s [options]\n\n", app_name);
-
-   fprintf(stdout, "Image parameter commands\n\n");
-
-   raspicli_display_help(cmdline_commands, cmdline_commands_size);
-
-//   raspitex_display_help();
-
-   return;
-}
-
-/**
- * Parse the incoming command line and put resulting parameters in to the state
- *
- * @param argc Number of arguments in command line
- * @param argv Array of pointers to strings from command line
- * @param state Pointer to state structure to assign any discovered parameters to
- * @return non-0 if failed for some reason, 0 otherwise
- */
-static int parse_cmdline(int argc, const char **argv, RASPISTILL_STATE *state)
-{
-   // Parse the command line arguments.
-   // We are looking for --<something> or -<abbreviation of something>
-
-   int valid = 1;
-   int i;
-
-   for (i = 1; i < argc && valid; i++)
-   {
-      int command_id, num_parameters;
-
-      if (!argv[i])
-         continue;
-
-      if (argv[i][0] != '-')
-      {
-         valid = 0;
-         continue;
-      }
-
-      // Assume parameter is valid until proven otherwise
-      valid = 1;
-
-      command_id = raspicli_get_command_id(cmdline_commands, cmdline_commands_size, &argv[i][1], &num_parameters);
-
-      // If we found a command but are missing a parameter, continue (and we will drop out of the loop)
-      if (command_id != -1 && num_parameters > 0 && (i + 1 >= argc) )
-         continue;
-
-      //  We are now dealing with a command line option
-      switch (command_id)
-      {
-      case CommandQuality: // Quality = 1-100
-         if (sscanf(argv[i + 1], "%u", &state->quality) == 1)
-         {
-            if (state->quality > 100)
-            {
-               fprintf(stderr, "Setting max quality = 100\n");
-               state->quality = 100;
-            }
-            i++;
-         }
-         else
-            valid = 0;
-         break;
-
-      case CommandRaw: // Add raw bayer data in metadata
-         state->wantRAW = 1;
-         break;
-
-      case CommandLink :
-      {
-         int len = strlen(argv[i+1]);
-         if (len)
-         {
-            state->linkname = malloc(len + 10);
-            vcos_assert(state->linkname);
-            if (state->linkname)
-               strncpy(state->linkname, argv[i + 1], len+1);
-            i++;
-         }
-         else
-            valid = 0;
-         break;
-
-      }
-
-      case CommandFrameStart:  // use a staring value != 0
-      {
-         if (sscanf(argv[i + 1], "%d", &state->frameStart) == 1)
-         {
-            i++;
-         }
-         else
-            valid = 0;
-         break;
-      }
-
-      case CommandDateTime: // use datetime
-         state->datetime = 1;
-         break;
-
-      case CommandTimeStamp: // use timestamp
-         state->timestamp = 1;
-         break;
-
-      case CommandTimeout: // Time to run viewfinder for before taking picture, in seconds
-      {
-         if (sscanf(argv[i + 1], "%d", &state->timeout) == 1)
-         {
-            // Ensure that if previously selected CommandKeypress we don't overwrite it
-            if (state->timeout == 0 && state->frameNextMethod == FRAME_NEXT_SINGLE)
-               state->frameNextMethod = FRAME_NEXT_FOREVER;
-
-            i++;
-         }
-         else
-            valid = 0;
-         break;
-      }
-
-      case CommandThumbnail : // thumbnail parameters - needs string "x:y:quality"
-         if ( strcmp( argv[ i + 1 ], "none" ) == 0 )
-         {
-            state->thumbnailConfig.enable = 0;
-         }
-         else
-         {
-            sscanf(argv[i + 1], "%d:%d:%d",
-                   &state->thumbnailConfig.width,
-                   &state->thumbnailConfig.height,
-                   &state->thumbnailConfig.quality);
-         }
-         i++;
-         break;
-
-      case CommandDemoMode: // Run in demo mode - no capture
-      {
-         // Demo mode might have a timing parameter
-         // so check if a) we have another parameter, b) its not the start of the next option
-         if (i + 1 < argc  && argv[i+1][0] != '-')
-         {
-            if (sscanf(argv[i + 1], "%u", &state->demoInterval) == 1)
-            {
-               // TODO : What limits do we need for timeout?
-               state->demoMode = 1;
-               i++;
-            }
-            else
-               valid = 0;
-         }
-         else
-         {
-            state->demoMode = 1;
-         }
-
-         break;
-      }
-
-      case CommandEncoding :
-      {
-         int len = strlen(argv[i + 1]);
-         valid = 0;
-
-         if (len)
-         {
-            int j;
-            for (j=0; j<encoding_xref_size; j++)
-            {
-               if (strcmp(encoding_xref[j].format, argv[i+1]) == 0)
-               {
-                  state->encoding = encoding_xref[j].encoding;
-                  valid = 1;
-                  i++;
-                  break;
-               }
-            }
-         }
-         break;
-      }
-
-      case CommandExifTag:
-         if ( strcmp( argv[ i + 1 ], "none" ) == 0 )
-         {
-            state->enableExifTags = 0;
-         }
-         else
-         {
-            store_exif_tag(state, argv[i+1]);
-         }
-         i++;
-         break;
-
-      case CommandTimelapse:
-         if (sscanf(argv[i + 1], "%u", &state->timelapse) != 1)
-            valid = 0;
-         else
-         {
-            if (state->timelapse)
-               state->frameNextMethod = FRAME_NEXT_TIMELAPSE;
-            else
-               state->frameNextMethod = FRAME_NEXT_IMMEDIATELY;
-
-            i++;
-         }
-         break;
-
-      case CommandFullResPreview:
-         state->fullResPreview = 1;
-         break;
-
-      case CommandKeypress: // Set keypress between capture mode
-         state->frameNextMethod = FRAME_NEXT_KEYPRESS;
-
-         if (state->timeout == -1)
-            state->timeout = 0;
-
-         break;
-
-      case CommandSignal:   // Set SIGUSR1 & SIGUSR2 between capture mode
-         state->frameNextMethod = FRAME_NEXT_SIGNAL;
-         // Reenable the signal
-         signal(SIGUSR1, default_signal_handler);
-         signal(SIGUSR2, default_signal_handler);
-
-         if (state->timeout == -1)
-            state->timeout = 0;
-
-         break;
-
-      case CommandGL:
-         state->useGL = 1;
-         break;
-
-      case CommandGLCapture:
-         state->glCapture = 1;
-         break;
-
-      case CommandBurstMode:
-         state->burstCaptureMode=1;
-         break;
-
-      case CommandRestartInterval:
-      {
-         if (sscanf(argv[i + 1], "%u", &state->restart_interval) == 1)
-         {
-            i++;
-         }
-         else
-            valid = 0;
-         break;
-      }
-
-      default:
-      {
-         // Try parsing for any image specific parameters
-         // result indicates how many parameters were used up, 0,1,2
-         // but we adjust by -1 as we have used one already
-         const char *second_arg = (i + 1 < argc) ? argv[i + 1] : NULL;
-         int parms_used = raspicamcontrol_parse_cmdline(&state->camera_parameters, &argv[i][1], second_arg);
-
-         // Still unused, try common settings
-         if (!parms_used)
-            parms_used = raspicommonsettings_parse_cmdline(&state->common_settings, &argv[i][1], second_arg, &application_help_message);
-
-         // Still unused, try preview settings
-         if (!parms_used)
-            parms_used = raspipreview_parse_cmdline(&state->preview_parameters, &argv[i][1], second_arg);
-
-         // If no parms were used, this must be a bad parameters
-         if (!parms_used)
-            valid = 0;
-         else
-            i += parms_used - 1;
-
-         break;
-      }
-      }
-   }
-
-
-   if (!valid)
-   {
-      fprintf(stderr, "Invalid command line option (%s)\n", argv[i-1]);
-      return 1;
-   }
-
-   return 0;
-}
-
-
-/**
- *  buffer header callback function for encoder
- *
- *  Callback will dump buffer data to the specific file
- *
- * @param port Pointer to port from which callback originated
- * @param buffer mmal buffer header pointer
- */
 static void encoder_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
    int complete = 0;
@@ -820,23 +372,22 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
       MMAL_PARAMETER_CAMERA_CONFIG_T cam_config =
       {
          { MMAL_PARAMETER_CAMERA_CONFIG, sizeof(cam_config) },
-         .max_stills_w = state->common_settings.width,
-         .max_stills_h = state->common_settings.height,
+         .max_stills_w = SPI_IM_W,
+         .max_stills_h = SPI_IM_H,
          .stills_yuv422 = 0,
          .one_shot_stills = 1,
-         .max_preview_video_w = state->preview_parameters.previewWindow.width,
-         .max_preview_video_h = state->preview_parameters.previewWindow.height,
+         .max_preview_video_w = 0,
+         .max_preview_video_h = 0,
          .num_preview_video_frames = 3,
          .stills_capture_circular_buffer_height = 0,
          .fast_preview_resume = 0,
          .use_stc_timestamp = MMAL_PARAM_TIMESTAMP_MODE_RESET_STC
       };
 
-      if (state->fullResPreview)
-      {
-         cam_config.max_preview_video_w = state->common_settings.width;
-         cam_config.max_preview_video_h = state->common_settings.height;
-      }
+
+     cam_config.max_preview_video_w = SPI_IM_W;
+     cam_config.max_preview_video_h = SPI_IM_H;
+
 
       mmal_port_parameter_set(camera->control, &cam_config.hdr);
    }
@@ -863,31 +414,17 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
       };
       mmal_port_parameter_set(preview_port, &fps_range.hdr);
    }
-   if (state->fullResPreview)
-   {
       // In this mode we are forcing the preview to be generated from the full capture resolution.
       // This runs at a max of 15fps with the OV5647 sensor.
-      format->es->video.width = VCOS_ALIGN_UP(state->common_settings.width, 32);
-      format->es->video.height = VCOS_ALIGN_UP(state->common_settings.height, 16);
+      format->es->video.width = VCOS_ALIGN_UP(SPI_IM_W, 32);
+      format->es->video.height = VCOS_ALIGN_UP(SPI_IM_H, 16);
       format->es->video.crop.x = 0;
       format->es->video.crop.y = 0;
-      format->es->video.crop.width = state->common_settings.width;
-      format->es->video.crop.height = state->common_settings.height;
+      format->es->video.crop.width = SPI_IM_W;
+      format->es->video.crop.height = SPI_IM_H;
       format->es->video.frame_rate.num = FULL_RES_PREVIEW_FRAME_RATE_NUM;
       format->es->video.frame_rate.den = FULL_RES_PREVIEW_FRAME_RATE_DEN;
-   }
-   else
-   {
-      // Use a full FOV 4:3 mode
-      format->es->video.width = VCOS_ALIGN_UP(state->preview_parameters.previewWindow.width, 32);
-      format->es->video.height = VCOS_ALIGN_UP(state->preview_parameters.previewWindow.height, 16);
-      format->es->video.crop.x = 0;
-      format->es->video.crop.y = 0;
-      format->es->video.crop.width = state->preview_parameters.previewWindow.width;
-      format->es->video.crop.height = state->preview_parameters.previewWindow.height;
-      format->es->video.frame_rate.num = PREVIEW_FRAME_RATE_NUM;
-      format->es->video.frame_rate.den = PREVIEW_FRAME_RATE_DEN;
-   }
+
 
    status = mmal_port_format_commit(preview_port);
    if (status != MMAL_SUCCESS)
@@ -928,12 +465,12 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
    }
    // Set our stills format on the stills (for encoder) port
    format->encoding = MMAL_ENCODING_OPAQUE;
-   format->es->video.width = VCOS_ALIGN_UP(state->common_settings.width, 32);
-   format->es->video.height = VCOS_ALIGN_UP(state->common_settings.height, 16);
+   format->es->video.width = VCOS_ALIGN_UP(SPI_IM_W, 32);
+   format->es->video.height = VCOS_ALIGN_UP(SPI_IM_H, 16);
    format->es->video.crop.x = 0;
    format->es->video.crop.y = 0;
-   format->es->video.crop.width = state->common_settings.width;
-   format->es->video.crop.height = state->common_settings.height;
+   format->es->video.crop.width = SPI_IM_W;
+   format->es->video.crop.height = SPI_IM_H;
    format->es->video.frame_rate.num = STILLS_FRAME_RATE_NUM;
    format->es->video.frame_rate.den = STILLS_FRAME_RATE_DEN;
 
@@ -969,10 +506,6 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
 //   }
 
    state->camera_component = camera;
-
-   if (state->common_settings.verbose)
-      fprintf(stderr, "Camera component done\n");
-
    return status;
 
 error:
@@ -1076,16 +609,6 @@ static MMAL_STATUS_T create_encoder_component(RASPISTILL_STATE *state)
    // Set up any required thumbnail
    {
       MMAL_PARAMETER_THUMBNAIL_CONFIG_T param_thumb = {{MMAL_PARAMETER_THUMBNAIL_CONFIGURATION, sizeof(MMAL_PARAMETER_THUMBNAIL_CONFIG_T)}, 0, 0, 0, 0};
-
-      if ( state->thumbnailConfig.enable &&
-            state->thumbnailConfig.width > 0 && state->thumbnailConfig.height > 0 )
-      {
-         // Have a valid thumbnail defined
-         param_thumb.enable = 1;
-         param_thumb.width = state->thumbnailConfig.width;
-         param_thumb.height = state->thumbnailConfig.height;
-         param_thumb.quality = state->thumbnailConfig.quality;
-      }
       status = mmal_port_parameter_set(encoder->control, &param_thumb.hdr);
    }
 
@@ -1108,10 +631,6 @@ static MMAL_STATUS_T create_encoder_component(RASPISTILL_STATE *state)
 
    state->encoder_pool = pool;
    state->encoder_component = encoder;
-
-   if (state->common_settings.verbose)
-      fprintf(stderr, "Encoder component done\n");
-
    return status;
 
 error:
@@ -1263,11 +782,11 @@ static void store_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
  * @return Returns a MMAL_STATUS_T giving result of operation
 */
 
-MMAL_STATUS_T create_filenames(char** finalName, char** tempName, char * pattern, int frame)
+MMAL_STATUS_T create_filenames(char** finalName, char** tempName, char * pattern)
 {
    *finalName = NULL;
    *tempName = NULL;
-   if (0 > asprintf(finalName, pattern, frame) ||
+   if (0 > asprintf(finalName, pattern) ||
          0 > asprintf(tempName, "%s~", *finalName))
    {
       if (*finalName != NULL)
@@ -1281,7 +800,7 @@ MMAL_STATUS_T create_filenames(char** finalName, char** tempName, char * pattern
 
 
 static void rename_file(RASPISTILL_STATE *state, FILE *output_file,
-                        const char *final_filename, const char *use_filename, int frame)
+                        const char *final_filename, const char *use_filename)
 {
    MMAL_STATUS_T status;
 
@@ -1296,7 +815,7 @@ static void rename_file(RASPISTILL_STATE *state, FILE *output_file,
    {
       char *use_link;
       char *final_link;
-      status = create_filenames(&final_link, &use_link, state->linkname, frame);
+      status = create_filenames(&final_link, &use_link, state->linkname);
 
       // Create hard link if possible, symlink otherwise
       if (status != MMAL_SUCCESS
@@ -1343,28 +862,12 @@ int main(int argc, const char **argv)
 
    set_app_name(argv[0]);
 
-   // Do we have any parameters
-   if (argc == 1)
-   {
-      display_valid_parameters(basename(argv[0]), &application_help_message);
-      exit(EX_USAGE);
-   }
 
    default_status(&state);
    state.common_settings.filename = "/tmp/test.jpg";
-//
-//   // Parse the command line and put options in to our status structure
-//   if (parse_cmdline(argc, argv, &state))
-//   {
-//      exit(EX_USAGE);
-//   }
-//
-//   if (state.timeout == -1)
-//      state.timeout = 5000;
 
    // Setup for sensor specific parameters
-   get_sensor_defaults(state.common_settings.cameraNum, state.common_settings.camera_name,
-                       &state.common_settings.width, &state.common_settings.height);
+   get_sensor_defaults(state.common_settings.cameraNum, state.common_settings.camera_name);
 
 
    // OK, we have a nice set of parameters. Now set up our components
@@ -1377,7 +880,7 @@ int main(int argc, const char **argv)
       vcos_log_error("%s: Failed to create camera component", __func__);
       exit_code = EX_SOFTWARE;
    }
-   else if ((!state.useGL) && (status = raspipreview_create(&state.preview_parameters)) != MMAL_SUCCESS)
+   else if ((status = raspipreview_create(&state.preview_parameters)) != MMAL_SUCCESS)
    {
       vcos_log_error("%s: Failed to create preview component", __func__);
       destroy_camera_component(&state);
@@ -1400,8 +903,6 @@ int main(int argc, const char **argv)
       encoder_input_port  = state.encoder_component->input[0];
       encoder_output_port = state.encoder_component->output[0];
 
-
-
      // Note we are lucky that the preview and null sink components use the same input port
      // so we can simple do this without conditionals
      preview_input_port  = state.preview_parameters.preview_component->input[0];
@@ -1413,9 +914,6 @@ int main(int argc, const char **argv)
       if (status == MMAL_SUCCESS)
       {
          VCOS_STATUS_T vcos_status;
-
-         if (state.common_settings.verbose)
-            fprintf(stderr, "Connecting camera stills port to encoder input port\n");
 
          // Now connect the camera to the encoder
          status = connect_ports(camera_still_port, encoder_input_port, &state.encoder_connection);
@@ -1442,35 +940,23 @@ int main(int argc, const char **argv)
 
          else
          {
-            int frame, keep_looping = 1;
+
             FILE *output_file = NULL;
             char *use_filename = NULL;      // Temporary filename while image being written
             char *final_filename = NULL;    // Name that file gets once writing complete
-
-            frame = state.frameStart - 1;
-
-
-
-//                 if(frame==0)
             vcos_sleep(CAMERA_SETTLE_TIME);
-//                 else
-//                    vcos_sleep(30);
 
-//                 frame+=1;
 
                 printf("%s\n", state.common_settings.filename);
                // Open the file
 
                  vcos_assert(use_filename == NULL && final_filename == NULL);
-                 status = create_filenames(&final_filename, &use_filename, state.common_settings.filename, frame);
+                 status = create_filenames(&final_filename, &use_filename, state.common_settings.filename);
                  if (status  != MMAL_SUCCESS)
                  {
                     vcos_log_error("Unable to create filenames");
                     goto error;
                  }
-
-                 if (state.common_settings.verbose)
-                    fprintf(stderr, "Opening output file %s\n", final_filename);
                  // Technically it is opening the temp~ filename which will be renamed to the final filename
 
                  output_file = fopen(use_filename, "wb");
@@ -1484,17 +970,7 @@ int main(int argc, const char **argv)
                   printf("%s, %s\n", use_filename, final_filename);
                   callback_data.file_handle = output_file;
 
-
-               // We only capture if a filename was specified and it opened
-               if (output_file)
-               {
-                  int num, q;
-
-                  if ( state.enableExifTags )
-                  {
-                     add_exif_tags(&state);
-                  }
-
+                  add_exif_tags(&state);
 
                   // There is a possibility that shutter needs to be set each loop.
                   if (mmal_status_to_int(mmal_port_parameter_set_uint32(state.camera_component->control, MMAL_PARAMETER_SHUTTER_SPEED, state.camera_parameters.shutter_speed)) != MMAL_SUCCESS)
@@ -1507,8 +983,10 @@ int main(int argc, const char **argv)
                   // Enable the encoder output port and tell it its callback function
                   status = mmal_port_enable(encoder_output_port, encoder_buffer_callback);
 
+                  int num, q;
                   // Send all the buffers to the encoder output port
                   num = mmal_queue_length(state.encoder_pool->queue);
+
 
                   for (q=0; q<num; q++)
                   {
@@ -1533,8 +1011,6 @@ int main(int argc, const char **argv)
                      // For some reason using vcos_semaphore_wait_timeout sometimes returns immediately with bad parameter error
                      // even though it appears to be all correct, so reverting to untimed one until figure out why its erratic
                      vcos_semaphore_wait(&callback_data.complete_semaphore);
-                     if (state.common_settings.verbose)
-                        fprintf(stderr, "Finished capture %d\n", frame);
                   }
 
                   // Ensure we don't die if get callback with no open file
@@ -1542,7 +1018,7 @@ int main(int argc, const char **argv)
 
                   if (output_file != stdout)
                   {
-                     rename_file(&state, output_file, final_filename, use_filename, frame);
+                     rename_file(&state, output_file, final_filename, use_filename);
                   }
                   else
                   {
@@ -1550,7 +1026,7 @@ int main(int argc, const char **argv)
                   }
                   // Disable encoder output port
                   status = mmal_port_disable(encoder_output_port);
-               }
+
 
                if (use_filename)
                {
@@ -1576,9 +1052,6 @@ error:
 
       mmal_status_to_int(status);
 
-      if (state.common_settings.verbose)
-         fprintf(stderr, "Closing down\n");
-
       // Disable all our ports that are not handled by connections
       check_disable_port(camera_video_port);
       check_disable_port(encoder_output_port);
@@ -1602,12 +1075,6 @@ error:
       destroy_encoder_component(&state);
       raspipreview_destroy(&state.preview_parameters);
       destroy_camera_component(&state);
-
-      if (state.common_settings.verbose)
-         fprintf(stderr, "Close down completed, all components disconnected, disabled and destroyed\n\n");
-
-//      if (state.common_settings.gps)
-//         raspi_gps_shutdown(state.common_settings.verbose);
    }
 
    if (status != MMAL_SUCCESS)

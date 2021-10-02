@@ -60,9 +60,7 @@ typedef struct
 
 MMAL_STATUS_T raspipreview_create(RASPIPREVIEW_PARAMETERS *state);
 void raspipreview_destroy(RASPIPREVIEW_PARAMETERS *state);
-void raspipreview_set_defaults(RASPIPREVIEW_PARAMETERS *state);
-void raspipreview_dump_parameters(RASPIPREVIEW_PARAMETERS *state);
-int raspipreview_parse_cmdline(RASPIPREVIEW_PARAMETERS *params, const char *arg1, const char *arg2);
-void raspipreview_display_help();
+
+
 
 #endif /* RASPIPREVIEW_H_ */

@@ -41,7 +41,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/mmal/mmal_parameters_camera.h"
 #include "interface/mmal/util/mmal_connection.h"
 
-#include "RaspiCLI.h"
 #include "RaspiPreview.h"
 #include "RaspiCamControl.h"
 #include "RaspiCommonSettings.h"
@@ -66,28 +65,8 @@ void print_app_details(FILE *fd)
    fprintf(fd, "\n\"%s\" Camera App (commit %s%s)\n\n", basename(app_name), GIT_COMMIT_ID, TAINTED);
 }
 
-void display_valid_parameters(char *name, void (*app_help)(char*))
-{
-   print_app_details(stdout);
 
-   // This should be defined in the main app source code
-   if (app_help)
-      (*app_help)(name);
-
-   // general settings
-   raspicommonsettings_display_help();
-
-   // Help for preview options
-   raspipreview_display_help();
-
-   // Now display any help information from the camcontrol code
-   raspicamcontrol_display_help();
-
-   fprintf(stdout, "\n");
-}
-
-
-void get_sensor_defaults(int camera_num, char *camera_name, int *width, int *height )
+void get_sensor_defaults(int camera_num, char *camera_name)
 {
    MMAL_COMPONENT_T *camera_info;
    MMAL_STATUS_T status;
@@ -111,11 +90,6 @@ void get_sensor_defaults(int camera_num, char *camera_name, int *width, int *hei
          status = mmal_port_parameter_get(camera_info->control, &param.hdr);
          if (status == MMAL_SUCCESS && param.num_cameras > camera_num)
          {
-            // Take the parameters from the first camera listed.
-            if (*width == 0)
-               *width = param.cameras[camera_num].max_width;
-            if (*height == 0)
-               *height = param.cameras[camera_num].max_height;
             strncpy(camera_name, param.cameras[camera_num].camera_name, MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN);
             camera_name[MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN-1] = 0;
          }
@@ -135,11 +109,6 @@ void get_sensor_defaults(int camera_num, char *camera_name, int *width, int *hei
       vcos_log_error("Failed to create camera_info component");
    }
 
-   // default to OV5647 if nothing detected..
-   if (*width == 0)
-      *width = 2592;
-   if (*height == 0)
-      *height = 1944;
 }
 
 void set_app_name(const char *name)

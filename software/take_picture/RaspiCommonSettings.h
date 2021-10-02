@@ -46,14 +46,12 @@ typedef struct
    char *filename;                     /// filename of output file
    int cameraNum;                      /// Camera number
    int sensor_mode;                    /// Sensor mode. 0=auto. Check docs/forum for modes selected by other values.
-   int verbose;                        /// !0 if want detailed run information
-   int gps;                            /// Add real-time gpsd output to output
+
 
 } RASPICOMMONSETTINGS_PARAMETERS;
 
 void raspicommonsettings_set_defaults(RASPICOMMONSETTINGS_PARAMETERS *);
-void raspicommonsettings_dump_parameters(RASPICOMMONSETTINGS_PARAMETERS *);
-void raspicommonsettings_display_help();
-int raspicommonsettings_parse_cmdline(RASPICOMMONSETTINGS_PARAMETERS *state, const char *arg1, const char *arg2, void (*app_help)());
+
+
 
 #endif

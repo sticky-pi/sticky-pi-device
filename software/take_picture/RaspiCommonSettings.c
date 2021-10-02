@@ -53,36 +53,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "interface/mmal/mmal_parameters_camera.h"
 
 #include "RaspiCommonSettings.h"
-#include "RaspiCLI.h"
 #include "RaspiHelpers.h"
-#include "RaspiGPS.h"
-
-enum
-{
-   CommandHelp,
-   CommandWidth,
-   CommandHeight,
-   CommandOutput,
-   CommandVerbose,
-   CommandCamSelect,
-   CommandSensorMode,
-   CommandGpsd,
-};
-
-
-static COMMAND_LIST cmdline_commands[] =
-{
-   { CommandHelp,    "-help",       "?",  "This help information", 0 },
-   { CommandWidth,   "-width",      "w",  "Set image width <size>", 1 },
-   { CommandHeight,  "-height",     "h",  "Set image height <size>", 1 },
-   { CommandOutput,  "-output",     "o",  "Output filename <filename> (to write to stdout, use '-o -'). If not specified, no file is saved", 1 },
-   { CommandVerbose, "-verbose",    "v",  "Output verbose information during run", 0 },
-   { CommandCamSelect, "-camselect","cs", "Select camera <number>. Default 0", 1 },
-   { CommandSensorMode,"-mode",     "md", "Force sensor mode. 0=auto. See docs for other modes available", 1},
-   { CommandGpsd,    "-gpsdexif",   "gps","Apply real-time GPS information to output (e.g. EXIF in JPG, annotation in video (requires " LIBGPS_SO_VERSION ")", 0},
-};
-
-static int cmdline_commands_size = sizeof(cmdline_commands) / sizeof(cmdline_commands[0]);
 
 
 void raspicommonsettings_set_defaults(RASPICOMMONSETTINGS_PARAMETERS *state)
@@ -92,10 +63,8 @@ void raspicommonsettings_set_defaults(RASPICOMMONSETTINGS_PARAMETERS *state)
    state->width = 0;
    state->height = 0;
    state->filename = NULL;
-   state->verbose = 0;
    state->cameraNum = 0;
    state->sensor_mode = 0;
-   state->gps = 0;
 };
 
 /**
@@ -110,117 +79,8 @@ void raspicommonsettings_dump_parameters(RASPICOMMONSETTINGS_PARAMETERS *state)
    fprintf(stderr, "Width %d, Height %d, filename %s\n", state->width,
            state->height, state->filename);
    fprintf(stderr, "Using camera %d, sensor mode %d\n\n", state->cameraNum, state->sensor_mode);
-   fprintf(stderr, "GPS output %s\n\n", state->gps ? "Enabled" : "Disabled");
+
 };
 
-/**
- * Display help for command line options for this module
- */
-void raspicommonsettings_display_help()
-{
-   fprintf(stdout, "\nCommon Settings commands\n\n");
-   raspicli_display_help(cmdline_commands, cmdline_commands_size);
-}
 
 
-/**
- * Parse a possible command pair - command and parameter
- * @param arg1 Command
- * @param arg2 Parameter (could be NULL)
- * @return How many parameters were used, 0,1,2
- */
-int raspicommonsettings_parse_cmdline(RASPICOMMONSETTINGS_PARAMETERS *state, const char *arg1, const char *arg2, void (*app_help)(char*))
-{
-   int command_id, used = 0, num_parameters;
-
-   if (!arg1)
-      return 0;
-
-   command_id = raspicli_get_command_id(cmdline_commands, cmdline_commands_size, arg1, &num_parameters);
-
-   // If invalid command, or we are missing a parameter, drop out
-   if (command_id==-1 || (command_id != -1 && num_parameters > 0 && arg2 == NULL))
-      return 0;
-
-   switch (command_id)
-   {
-   case CommandHelp:
-   {
-      display_valid_parameters(basename(get_app_name()), app_help);
-      exit(0);
-      break;
-   }
-   case CommandWidth: // Width > 0
-      if (sscanf(arg2, "%u", &state->width) == 1)
-         used = 2;
-      break;
-
-   case CommandHeight: // Height > 0
-      if (sscanf(arg2, "%u", &state->height) == 1)
-         used = 2;
-      break;
-
-   case CommandOutput:  // output filename
-   {
-      int len = strlen(arg2);
-      if (len)
-      {
-         // Ensure that any %<char> is either %% or %d.
-         const char *percent = arg2;
-
-         while(*percent && (percent=strchr(percent, '%')) != NULL)
-         {
-            int digits=0;
-            percent++;
-            while(isdigit(*percent))
-            {
-               percent++;
-               digits++;
-            }
-            if(!((*percent == '%' && !digits) || *percent == 'd'))
-            {
-               used = 0;
-               fprintf(stderr, "Filename contains %% characters, but not %%d or %%%% - sorry, will fail\n");
-               break;
-            }
-            percent++;
-         }
-
-         state->filename = malloc(len + 10); // leave enough space for any timelapse generated changes to filename
-         vcos_assert(state->filename);
-         if (state->filename)
-            strncpy(state->filename, arg2, len+1);
-         used = 2;
-      }
-      else
-         used = 0;
-      break;
-   }
-
-   case CommandVerbose: // display lots of data during run
-      state->verbose = 1;
-      used = 1;
-      break;
-
-   case CommandCamSelect:  //Select camera input port
-   {
-      if (sscanf(arg2, "%u", &state->cameraNum) == 1)
-         used = 2;
-      break;
-   }
-
-   case CommandSensorMode:
-   {
-      if (sscanf(arg2, "%u", &state->sensor_mode) == 1)
-         used = 2;
-      break;
-   }
-
-   case CommandGpsd:
-      state->gps = 1;
-      used = 1;
-      break;
-   }
-
-   return used;
-}

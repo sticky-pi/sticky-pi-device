@@ -29,8 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef RASPICAM_HELPERS
 #define RASPICAM_HELPERS
 
-void display_valid_parameters(char *name, void (*app_help)(char*));
-void get_sensor_defaults(int camera_num, char *camera_name, int *width, int *height);
+
+void get_sensor_defaults(int camera_num, char *camera_name);
 void set_app_name(const char *name);
 const char *get_app_name();
 MMAL_STATUS_T connect_ports(MMAL_PORT_T *output_port, MMAL_PORT_T *input_port, MMAL_CONNECTION_T **connection);

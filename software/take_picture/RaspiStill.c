@@ -81,12 +81,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "RaspiPreview.h"
 #include "RaspiHelpers.h"
 #include "jsmn.h"
+#include "DHT22.h"
 
 
 #include <semaphore.h>
 #include <math.h>
 #include <pthread.h>
 #include <time.h>
+#include <wiringPi.h>
 
 // Standard port setting for the camera component
 #define MMAL_CAMERA_PREVIEW_PORT 0
@@ -684,6 +686,12 @@ static MMAL_STATUS_T add_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
 
 
 char * custom_exif_data(){
+
+    DHT_DATA dht_data = {-300.0, -1.0};
+    int status = dht_read_data(&dht_data, 0);
+    printf("DHT status %i\n", status);
+    printf("T, H = %02f, %02f\n", dht_data.temp, dht_data.hum);
+
     double lat = 0;
     double lng = 0;
     float alt = 0;
@@ -879,6 +887,11 @@ static void * set_picture_path(RASPISTILL_STATE *state, char *picture_path){
  */
 int main(int argc, const char **argv)
 {
+
+    if (wiringPiSetup() == -1) {
+            fprintf(stderr, "Failed to initialize wiringPi\n");
+	}
+
    // Our main data storage vessel..
    RASPISTILL_STATE state;
    int exit_code = EX_OK;
@@ -990,11 +1003,14 @@ int main(int argc, const char **argv)
             FILE *output_file = NULL;
             char *use_filename = NULL;      // Temporary filename while image being written
             char *final_filename = NULL;    // Name that file gets once writing complete
+
+            int i=0;
+            MMAL_PARAMETER_CAMERA_SETTINGS_T settings;
             vcos_sleep(CAMERA_SETTLE_TIME);
 
 
-                printf("FILENAME HERE: %s\n", filename);
-               // Open the file
+//              settings = raspicamcontrol_camera_settings(state.camera_component);
+//              printf("CAMERA_PARAM %d\n", ((double) settings.exposure));
 
                  vcos_assert(use_filename == NULL && final_filename == NULL);
                  status = create_filenames(&final_filename, &use_filename, filename);
@@ -1021,6 +1037,10 @@ int main(int argc, const char **argv)
                   // There is a possibility that shutter needs to be set each loop.
                   if (mmal_status_to_int(mmal_port_parameter_set_uint32(state.camera_component->control, MMAL_PARAMETER_SHUTTER_SPEED, state.camera_parameters.shutter_speed)) != MMAL_SUCCESS)
                      vcos_log_error("Unable to set shutter speed");
+
+//                  printf("CAMERA_PARAM %d\n", (double) settings.digital_gain);
+//                  printf("CAMERA_PARAM %i\n", settings.analog_gain);
+
 
                   // Enable the encoder output port
                   encoder_output_port->userdata = (struct MMAL_PORT_USERDATA_T *)&callback_data;
@@ -1093,6 +1113,7 @@ int main(int argc, const char **argv)
          mmal_status_to_int(status);
          vcos_log_error("%s: Failed to connect camera to preview", __func__);
       }
+      custom_exif_data();
 
 error:
 

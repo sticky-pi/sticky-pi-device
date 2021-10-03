@@ -238,6 +238,13 @@ int raspicamcontrol_get_sharpness(MMAL_COMPONENT_T *camera);
 int raspicamcontrol_get_contrast(MMAL_COMPONENT_T *camera);
 int raspicamcontrol_get_brightness(MMAL_COMPONENT_T *camera);
 int raspicamcontrol_get_ISO(MMAL_COMPONENT_T *camera);
+
+MMAL_PARAMETER_CAMERA_SETTINGS_T raspicamcontrol_camera_settings(MMAL_COMPONENT_T *camera);
+
+//int raspicamcontrol_get_shutter_speed(MMAL_COMPONENT_T *camera);
+
+
+
 MMAL_PARAM_EXPOSUREMETERINGMODE_T raspicamcontrol_get_metering_mode(MMAL_COMPONENT_T *camera);
 int raspicamcontrol_get_video_stabilisation(MMAL_COMPONENT_T *camera);
 int raspicamcontrol_get_exposure_compensation(MMAL_COMPONENT_T *camera);

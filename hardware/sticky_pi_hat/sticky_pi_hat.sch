@@ -31,17 +31,17 @@ $EndComp
 $Comp
 L Device:R R3
 U 1 1 613829B2
-P 5450 2650
-F 0 "R3" V 5657 2650 50  0000 C CNN
-F 1 "100Ω" V 5566 2650 50  0000 C CNN
-F 2 "Resistor_SMD:R_2010_5025Metric" V 5380 2650 50  0001 C CNN
-F 3 "https://www.koaspeer.com/pdfs/RK73H.pdf" H 5450 2650 50  0001 C CNN
-F 4 "RC2010JK-0710KL" H 5450 2650 50  0001 C CNN "part_number"
-F 5 "KOA Speer Electronics, Inc." H 5450 2650 50  0001 C CNN "Manufacturer"
-F 6 "" H 5450 2650 50  0001 C CNN "Vendor"
-F 7 "RC2010JK-0710KL" H 5450 2650 50  0001 C CNN "Part"
-	1    5450 2650
-	0    -1   -1   0   
+P 5600 2800
+F 0 "R3" V 5807 2800 50  0000 C CNN
+F 1 "100Ω" V 5716 2800 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 5530 2800 50  0001 C CNN
+F 3 "https://www.koaspeer.com/pdfs/RK73H.pdf" H 5600 2800 50  0001 C CNN
+F 4 "RC2010JK-0710KL" H 5600 2800 50  0001 C CNN "part_number"
+F 5 "KOA Speer Electronics, Inc." H 5600 2800 50  0001 C CNN "Manufacturer"
+F 6 "" H 5600 2800 50  0001 C CNN "Vendor"
+F 7 "RC2010JK-0710KL" H 5600 2800 50  0001 C CNN "Part"
+	1    5600 2800
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:R R1
@@ -217,21 +217,6 @@ F 7 "CM316X5R106K10AT" H 6950 2400 50  0001 C CNN "Part"
 	1    6950 2400
 	1    0    0    -1  
 $EndComp
-$Comp
-L Device:C C1
-U 1 1 613C0503
-P 5100 2400
-F 0 "C1" H 5215 2446 50  0000 L CNN
-F 1 "10μF" H 5215 2355 50  0000 L CNN
-F 2 "Capacitor_SMD:C_1206_3216Metric" H 5138 2250 50  0001 C CNN
-F 3 "https://global.kyocera.com/prdct/electro/product/pdf/cm_e.pdf" H 5100 2400 50  0001 C CNN
-F 4 "CM316X5R106K10AT" H 5100 2400 50  0001 C CNN "part_number"
-F 5 "Kyocera International Inc. Electronic Components" H 5100 2400 50  0001 C CNN "Manufacturer"
-F 6 "" H 5100 2400 50  0001 C CNN "Vendor"
-F 7 "CM316X5R106K10AT" H 5100 2400 50  0001 C CNN "Part"
-	1    5100 2400
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	5600 2650 5700 2650
 Wire Wire Line
@@ -244,17 +229,6 @@ Wire Wire Line
 Connection ~ 6000 3050
 Wire Wire Line
 	6000 3050 6200 3050
-$Comp
-L power:Earth #PWR0103
-U 1 1 613C9F6B
-P 5100 2550
-F 0 "#PWR0103" H 5100 2300 50  0001 C CNN
-F 1 "Earth" H 5100 2400 50  0001 C CNN
-F 2 "" H 5100 2550 50  0001 C CNN
-F 3 "~" H 5100 2550 50  0001 C CNN
-	1    5100 2550
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	6700 2450 6700 2250
 Wire Wire Line
@@ -484,17 +458,15 @@ F 7 "RMCF2010JT2K20" H 5550 4150 50  0001 C CNN "Part"
 	1    5550 4150
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	3000 4000 3900 4000
 $Comp
 L power:Earth #PWR0108
 U 1 1 615E52C8
-P 3900 4650
-F 0 "#PWR0108" H 3900 4400 50  0001 C CNN
-F 1 "Earth" H 3900 4500 50  0001 C CNN
-F 2 "" H 3900 4650 50  0001 C CNN
-F 3 "~" H 3900 4650 50  0001 C CNN
-	1    3900 4650
+P 4300 4000
+F 0 "#PWR0108" H 4300 3750 50  0001 C CNN
+F 1 "Earth" H 4300 3850 50  0001 C CNN
+F 2 "" H 4300 4000 50  0001 C CNN
+F 3 "~" H 4300 4000 50  0001 C CNN
+	1    4300 4000
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -650,13 +622,9 @@ Connection ~ 7250 2250
 Wire Wire Line
 	7250 2250 7300 2250
 Wire Wire Line
-	4750 4650 4750 4200
-Wire Wire Line
 	3000 4000 2950 4000
-Connection ~ 3000 4000
 Wire Wire Line
 	3000 3900 2900 3900
-Connection ~ 3000 3900
 Wire Wire Line
 	3000 3700 5050 3700
 Connection ~ 3000 3700
@@ -701,11 +669,11 @@ L Transistor_FET:Si2319CDS Q1
 U 1 1 619D1B75
 P 4000 4200
 F 0 "Q1" H 4205 4154 50  0000 L CNN
-F 1 "BSS806NH6327XTSA1" H 4205 4245 50  0000 L CNN
+F 1 "BSS806NH6327XTSA1" H 5100 4650 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-23" H 4200 4125 50  0001 L CIN
 F 3 "https://www.infineon.com/dgdl/BSS806N_Rev2.3_.pdf?folderId=db3a3043156fd573011622e10b5c1f67&fileId=db3a304330f686060131185f0553451c" H 4000 4200 50  0001 L CNN
 F 4 "Infineon Technologies" H 4000 4200 50  0001 C CNN "Manufacturer"
-F 5 "SI2319CDS-T1-GE3" H 4000 4200 50  0001 C CNN "part_number"
+F 5 "BSS806NH6327XTSA1" H 4000 4200 50  0001 C CNN "part_number"
 F 6 "" H 4000 4200 50  0001 C CNN "Vendor"
 F 7 "BSS806NH6327XTSA1" H 4000 4200 50  0001 C CNN "Part"
 	1    4000 4200
@@ -714,39 +682,27 @@ $EndComp
 $Comp
 L Device:R R7
 U 1 1 61A13B53
-P 4600 4650
-F 0 "R7" V 4807 4650 50  0000 C CNN
-F 1 "10k" V 4716 4650 50  0000 C CNN
-F 2 "Resistor_SMD:R_2010_5025Metric" V 4530 4650 50  0001 C CNN
-F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-RC_Group_51_RoHS_L_11.pdf" H 4600 4650 50  0001 C CNN
-F 4 "RC2010JK-0710KL" H 4600 4650 50  0001 C CNN "part_number"
-F 5 "YAGEO" H 4600 4650 50  0001 C CNN "Manufacturer"
-F 6 "" H 4600 4650 50  0001 C CNN "Vendor"
-F 7 "RC2010JK-0710KL" H 4600 4650 50  0001 C CNN "Part"
-	1    4600 4650
-	0    -1   -1   0   
+P 4750 4350
+F 0 "R7" V 4957 4350 50  0000 C CNN
+F 1 "10k" V 4866 4350 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 4680 4350 50  0001 C CNN
+F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-RC_Group_51_RoHS_L_11.pdf" H 4750 4350 50  0001 C CNN
+F 4 "RC2010JK-0710KL" H 4750 4350 50  0001 C CNN "part_number"
+F 5 "YAGEO" H 4750 4350 50  0001 C CNN "Manufacturer"
+F 6 "" H 4750 4350 50  0001 C CNN "Vendor"
+F 7 "RC2010JK-0710KL" H 4750 4350 50  0001 C CNN "Part"
+	1    4750 4350
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4750 4200 4200 4200
-Wire Wire Line
-	3900 4400 3900 4650
-Wire Wire Line
-	4450 4650 3900 4650
-Connection ~ 3900 4650
 Wire Wire Line
 	7900 4150 7900 4250
 Wire Wire Line
 	5550 4300 5550 4550
 Wire Wire Line
 	5050 3700 5050 4650
-Wire Wire Line
-	4750 5100 4750 4650
-Connection ~ 4750 4650
 Connection ~ 5100 2250
-Wire Wire Line
-	5100 2250 4300 2250
-Wire Wire Line
-	4800 2650 5300 2650
 $Comp
 L power:+5V #PWR0113
 U 1 1 613DA831
@@ -819,10 +775,6 @@ F 3 "" H 4800 3500 50  0001 C CNN
 	1    4800 3500
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	5550 2750 4800 2750
-Wire Wire Line
-	5550 2750 5550 4000
 Wire Wire Line
 	8100 3500 8100 4050
 Wire Wire Line
@@ -905,22 +857,94 @@ Wire Wire Line
 Wire Wire Line
 	7950 4650 5050 4650
 $Comp
-L Device:R R?
+L Device:R R8
 U 1 1 614F2EDD
-P 3950 3900
-F 0 "R?" V 4157 3900 50  0000 C CNN
-F 1 "5.5Ω" V 4066 3900 50  0000 C CNN
-F 2 "Resistor_SMD:R_2010_5025Metric" V 3880 3900 50  0001 C CNN
-F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-AC_51_RoHS_L_7.pdf" H 3950 3900 50  0001 C CNN
-F 4 "AC2010JK-07560RL" H 3950 3900 50  0001 C CNN "part_number"
-F 5 "YAGEO" H 3950 3900 50  0001 C CNN "Manufacturer"
-F 6 "" H 3950 3900 50  0001 C CNN "Vendor"
-F 7 "AC2010JK-07560RL" H 3950 3900 50  0001 C CNN "Part"
-	1    3950 3900
+P 3650 4400
+F 0 "R8" V 3857 4400 50  0000 C CNN
+F 1 "5.5Ω" V 3766 4400 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 3580 4400 50  0001 C CNN
+F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-AC_51_RoHS_L_7.pdf" H 3650 4400 50  0001 C CNN
+F 4 "AC2010JK-07560RL" H 3650 4400 50  0001 C CNN "part_number"
+F 5 "YAGEO" H 3650 4400 50  0001 C CNN "Manufacturer"
+F 6 "" H 3650 4400 50  0001 C CNN "Vendor"
+F 7 "AC2010JK-07560RL" H 3650 4400 50  0001 C CNN "Part"
+	1    3650 4400
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	3000 3900 3800 3900
+	4750 4500 4750 5100
 Wire Wire Line
-	4150 3900 4100 3900
+	3900 4000 4300 4000
+Wire Wire Line
+	3800 4400 3900 4400
+Connection ~ 3000 4000
+Wire Wire Line
+	3500 4400 3500 4000
+Wire Wire Line
+	3500 4000 3000 4000
+Connection ~ 3000 3900
+Wire Wire Line
+	3000 3900 4150 3900
+Wire Wire Line
+	4800 2750 4800 3200
+Wire Wire Line
+	4800 3200 5550 3200
+Wire Wire Line
+	5550 3200 5550 4000
+$Comp
+L power:Earth #PWR0103
+U 1 1 613C9F6B
+P 5100 2550
+F 0 "#PWR0103" H 5100 2300 50  0001 C CNN
+F 1 "Earth" H 5100 2400 50  0001 C CNN
+F 2 "" H 5100 2550 50  0001 C CNN
+F 3 "~" H 5100 2550 50  0001 C CNN
+	1    5100 2550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5100 2250 4900 2250
+$Comp
+L Device:C C1
+U 1 1 613C0503
+P 5100 2400
+F 0 "C1" H 5215 2446 50  0000 L CNN
+F 1 "10μF" H 5215 2355 50  0000 L CNN
+F 2 "Capacitor_SMD:C_1206_3216Metric" H 5138 2250 50  0001 C CNN
+F 3 "https://global.kyocera.com/prdct/electro/product/pdf/cm_e.pdf" H 5100 2400 50  0001 C CNN
+F 4 "CM316X5R106K10AT" H 5100 2400 50  0001 C CNN "part_number"
+F 5 "Kyocera International Inc. Electronic Components" H 5100 2400 50  0001 C CNN "Manufacturer"
+F 6 "" H 5100 2400 50  0001 C CNN "Vendor"
+F 7 "CM316X5R106K10AT" H 5100 2400 50  0001 C CNN "Part"
+	1    5100 2400
+	1    0    0    -1  
+$EndComp
+Connection ~ 4900 2250
+Wire Wire Line
+	4900 2250 4300 2250
+$Comp
+L Transistor_FET:BSS84 Q2
+U 1 1 6167A20B
+P 5250 2850
+F 0 "Q2" V 5499 2850 50  0000 C CNN
+F 1 "AO3415A" V 5590 2850 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 5450 2775 50  0001 L CIN
+F 3 "https://media.digikey.com/pdf/Data%20Sheets/Alpha%20&%20Omega/AO3415A.pdf" H 5250 2850 50  0001 L CNN
+F 4 "Alpha & Omega Semiconductor Inc." H 5250 2850 50  0001 C CNN "Manufacturer"
+F 5 "AO3415A" H 5250 2850 50  0001 C CNN "Part"
+F 6 "AO3415A" H 5250 2850 50  0001 C CNN "part_number"
+	1    5250 2850
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5600 2950 5450 2950
+Connection ~ 5450 2950
+Wire Wire Line
+	5450 2950 5400 2950
+Wire Wire Line
+	4800 2650 5250 2650
+Wire Wire Line
+	5050 2950 4900 2950
+Wire Wire Line
+	4900 2250 4900 2950
 $EndSCHEMATC

@@ -30,10 +30,10 @@ set (COMMON_SOURCES
 
 
 
-add_executable(raspistill  ${COMMON_SOURCES}  RaspiStill.c DHT22.c)
+add_executable(take_picture  ${COMMON_SOURCES}  RaspiStill.c DHT22.c)
 
 
-target_link_libraries(raspistill
+target_link_libraries(take_picture
      ${MMAL_CORE}
      ${MMAL_CORE_LIBRARY}
      ${MMAL_UTIL_LIBRARY}
@@ -43,7 +43,8 @@ target_link_libraries(raspistill
      ${CMAKE_THREAD_LIBS_INIT}
      ${WIRINGPI_LIBRARIES})
 
+INCLUDE(cmake_env_vars.txt)
 
-install(TARGETS raspistill DESTINATION /usr/local/bin)
+install(TARGETS take_picture DESTINATION /usr/local/bin)
 
 

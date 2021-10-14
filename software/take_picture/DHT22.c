@@ -8,51 +8,19 @@
 
 // CONSTANTS
 #define MAX_TIMINGS	85
-#define MAX_RETRIES 8
+#define MAX_RETRIES 6
 #define WAIT_BETWEEN_RETRIES 250 //ms
 
 // FIXME
-#define SPI_DHT_GPIO 20
-
-
-
-int GPIO_TO_WIRING_PI_MAP[]= {
-30,
-31,
-8,
-9,
-7,
-21,
-22,
-11,
-10,
-13,
-12,
-14,
-26,
-23,
-15,
-16,
-27,
-0,
-1,
-24,
-28,
-29,
-3,
-4,
-5,
-6,
-25,
-2
-};
-
-
+// why is that a global variable?
+int spi_dht_gpio;
 
 // recurse until valid read
 int dht_read_data(DHT_DATA * dht_data, int retry) {
 
-    int dht_pin = GPIO_TO_WIRING_PI_MAP[SPI_DHT_GPIO];
+    spi_dht_gpio = atoi(SPI_DHT_GPIO);
+
+    int dht_pin = GPIO_TO_WIRING_PI_MAP[spi_dht_gpio];
 
     int data[5] = { 0, 0, 0, 0, 0 };
 	uint8_t laststate = HIGH;

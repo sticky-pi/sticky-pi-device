@@ -130,9 +130,7 @@ typedef struct
    char *linkname;                     /// filename of output file
    float temp;
    float hum;
-   double lng;
-   double lat;
-   float alt;
+   float bat;  // battery level
 
     float no_flash_exposure_time;
     float no_flash_analog_gain;
@@ -158,6 +156,11 @@ typedef struct
    VCOS_SEMAPHORE_T complete_semaphore; /// semaphore which is posted when we reach end of frame (indicates end of capture or fault)
    RASPISTILL_STATE *pstate;            /// pointer to our state in case required in callback
 } PORT_USERDATA;
+
+// function prototypes
+void custom_exif_field(RASPISTILL_STATE *state, char *value);
+static void logging_error( char * pattern, ...);
+
 
 
 /**
@@ -192,6 +195,10 @@ static void default_status(RASPISTILL_STATE *state, struct tm *timeinfo)
    state->preview_parameters.wantFullScreenPreview = 0;
    state->preview_parameters.preview_component = NULL;
    state->preview_parameters.display_num = -1;
+
+   //fixme zoom defaults!
+
+
    raspicamcontrol_set_defaults(&state->camera_parameters);
 }
 
@@ -683,22 +690,6 @@ static MMAL_STATUS_T add_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
 }
 
 
-char * custom_exif_data(){
-    double lat = 0;
-    double lng = 0;
-    float alt = 0;
-    float hum = -1;
-    float temp = -300;
-    float no_flash_exposure_time;
-    float no_flash_analog_gain;
-    float no_flash_digital_gain;
-// read the metadata file to get lat lng alt.
-// if failure lat/lng,alt -> null;
-
-// read DHT using kernel module
-// if failure hum/temp-> null;
-}
-
 
 /**
  * Add a basic set of EXIF tags to the capture
@@ -716,7 +707,6 @@ static void add_exif_tags(RASPISTILL_STATE *state)
 
    snprintf(model_buf, 32, "IFD0.Model=RP_%s", state->camera_name);
    add_exif_tag(state, model_buf);
-   add_exif_tag(state, "IFD0.Make=StickyPi");
 
 
 
@@ -739,6 +729,9 @@ static void add_exif_tags(RASPISTILL_STATE *state)
    snprintf(exif_buf, sizeof(exif_buf), "IFD0.DateTime=%s", time_buf);
    add_exif_tag(state, exif_buf);
 
+   char value[512];
+   custom_exif_field(state, value);
+   add_exif_tag(state, value);
 }
 
 
@@ -811,7 +804,7 @@ static void set_device_id(char *device_id){
     assert(fp != NULL);
     size_t n = 0;
     char *line = NULL;
-    char first_six_char[6+1];
+    char first_six_char[6+1] = "";
     char match_word[] = "Serial";
 
     while (getline(&line, &n, fp) > 0) {
@@ -831,7 +824,9 @@ static void * set_picture_path(struct tm *timeinfo, char *picture_path){
 //    memset (device_name,'\0',9);
 
    set_device_id(device_name);
-   assert(device_name != "");
+   if(device_name[0] != '\0'){
+        logging_error("Cannot set device name!");
+   }
 
    snprintf(datetime_str, sizeof(time_buf),
             "%04d-%02d-%02d_%02d-%02d-%02d",
@@ -903,11 +898,105 @@ static void read_dht_and_sleep(RASPISTILL_STATE * state){
     state->hum = dht_data.hum;
 }
 
+int read_gpio_once(int pin){
+    pin = GPIO_TO_WIRING_PI_MAP[pin];
+    pinMode(pin, INPUT);
+    return digitalRead(pin);
+}
+
 int is_test_gpio_up(){
-    int spi_test_gpio = atoi(SPI_TESTING_GPIO);
-    int test_pin = GPIO_TO_WIRING_PI_MAP[spi_test_gpio];
-    pinMode(test_pin, INPUT);
-    return digitalRead(test_pin);
+    read_gpio_once(atoi(SPI_TESTING_GPIO));
+    }
+
+int is_manual_on_gpio_up(){
+    read_gpio_once(atoi(SPI_MANUAL_ON_GPIO));
+    }
+
+int must_try_to_sync() {
+    char path[64];
+    char touch_command[64];
+    time_t last_run_time, now;
+    struct stat attr;
+
+    sprintf(path, "%s/%s", SPI_IMAGE_DIR, SPI_METADATA_FILENAME);
+
+    if(stat(path, &attr) == 0){
+        last_run_time = attr.st_mtime;
+    }
+    else{
+        last_run_time = time(0);
+        FILE *fp;
+        fp = fopen (path, "w");
+        fputs("{}", fp);
+        fclose(fp);
+    }
+
+    sprintf(touch_command, "touch %s", path);
+    system(touch_command);
+
+    // to ensure we have no gap in time, time is only read from our metadata timetsamp file
+    stat(path, &attr);
+    now = attr.st_mtime;
+
+    long sync_period_seconds = atoi(SPI_SYNC_PERIOD_MINUTES) * 60;
+    time_t last_run_period = last_run_time /   sync_period_seconds;
+    time_t  now_period = now /  sync_period_seconds;
+    if(now_period > last_run_period){
+        return 1;
+    }
+    return 0 ;
+}
+
+void custom_exif_field(RASPISTILL_STATE *state, char *value){
+    char path[64];
+    struct stat attr;
+
+    sprintf(path, "%s/%s", SPI_IMAGE_DIR, SPI_METADATA_FILENAME);
+    if(stat(path, &attr) < 0){
+        value = "{}";
+        logging_error("No metadata file found!");
+    }
+
+    else{
+        FILE *fp;
+        fp = fopen (path, "r");
+
+        // read all in buffer
+        fgets(value, 512-1, fp);
+        fclose(fp);
+        char * ch_ptr = NULL;
+
+        ch_ptr = strrchr(value, '}');
+        if(ch_ptr == NULL){
+            logging_error("Could not find '}' in metadata file!");
+            value = "{";
+        }
+        else{
+            *ch_ptr = '\0';
+        }
+        // last "}" should become a ",",
+        char value_copy [1024];
+        strcpy(value_copy, value);
+        sprintf(value, "IFD0.Make=%s, \"temp\"=%02f, \"hum\"=%02f, \"bat\"=%02f, \"no_flash_exposure_time\"=%06f, \"no_flash_analog_gain\"=%06f, \"no_flash_digital_gain\"=%06f, \"version\"=\"%s\"}",
+                value_copy,
+                state->temp,
+                state->hum,
+                state->bat,
+                state->no_flash_exposure_time,
+                state->no_flash_analog_gain,
+                state->no_flash_digital_gain,
+                SPI_VERSION
+                );
+    }
+
+
+}
+
+
+void read_battery_level(RASPISTILL_STATE *state){
+    state->bat = 0.5;
+    //todo
+    //fixme
 }
 
 int main(int argc, const char **argv)
@@ -930,12 +1019,16 @@ int main(int argc, const char **argv)
 	}
     else if (is_test_gpio_up()){
         logging("Testing bridge is on, entering testing mode");
-        return atoi(TAKE_PICTURE_TESTING_STATUS);
+        return atoi(SPI_TAKE_PICTURE_TESTING_STATUS);
     }
+
+    int was_turned_on_by_button = is_manual_on_gpio_up();
+    int periodic_sync_attempt = must_try_to_sync();
     // highest priority for this program.
     // maybe helps with time sensitive operations such as reading
     // sensors at the software level
    piHiPri(99);
+
    // Our main data storage vessel..
    RASPISTILL_STATE state;
    int exit_code = EX_OK;
@@ -1047,6 +1140,8 @@ int main(int argc, const char **argv)
         // we wait for camera to warmup. meanwhile, we read DHT
 
         read_dht_and_sleep(&state);
+        read_battery_level(&state);
+
 
 
          vcos_assert(use_filename == NULL && final_filename == NULL);
@@ -1179,21 +1274,31 @@ error:
     if (status != MMAL_SUCCESS)
         raspicamcontrol_check_configuration(128);
 
+
     // the sync process
-    int spi_mo_gpio =   atoi(SPI_MANUAL_ON_GPIO);
-    int mo_pin = GPIO_TO_WIRING_PI_MAP[spi_mo_gpio];
-    pinMode(mo_pin, INPUT);
-    char user_requested_flag[3] = "";
-    if(digitalRead(mo_pin)){
-        user_requested_flag = "-u";
-        logging("User-requested picture");
+    // fixme HERE we should sync every SYNC_PERIOD_MINUTES min
+    // we could look at the delta_t between the last and the one before last file
+    // if the target hour is in between, we sync...
+    // if the user requested sync, we sync
+
+   //else we turn off!
+    if(was_turned_on_by_button){
+        logging("Device manually turned on");
+        system("sync_to_harvester.py -u");
     }
-    char command_buffer[32];
-    sprintf(command_buffer, "sync_to_harvester %s", user_requested_flag);
-    system(command_buffer);
+    else if(periodic_sync_attempt){
+        logging("Periodic syncing attempt");
+        system("sync_to_harvester.py -p");
+    }
+    else{
+        logging("Not syncing");
+        }
+
+
+
 
     // the turnoff process
-    sync();
+    system("sync");
     int spi_off_gpio =   atoi(SPI_OFF_GPIO);
     int off_pin = GPIO_TO_WIRING_PI_MAP[spi_off_gpio];
     pinMode(off_pin, OUTPUT);

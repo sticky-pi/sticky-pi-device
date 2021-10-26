@@ -9,6 +9,10 @@ fixup_file=fixup_x.dat
 
 # Disable bluetooth
 dtoverlay=pi3-disable-bt
+dtparam=audio=off
+
+#SPI device: ADC battery level reader
+dtparam=spi=on
 
 # Disable Wifi
 boot_delay=0
@@ -25,3 +29,8 @@ dtoverlay=i2c-rtc,ds1307
 # Disable leds
 dtparam=act_led_trigger=none
 dtparam=act_led_activelow=on
+
+
+#disable_camera_led=1
+#force_turbo=1
+#dtoverlay=sdtweak,overclock_50=100

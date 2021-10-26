@@ -1,3 +1,7 @@
+
+cmake_minimum_required(VERSION 3.21)
+project(StickyPiTakePicture)
+
 SET(COMPILE_DEFINITIONS -Werror)
 
 
@@ -11,6 +15,7 @@ include_directories(/opt/vc/include/interface/vcos/pthreads)
 include_directories(/opt/vc/include/interface/vmcs_host/linux)
 include_directories(/opt/vc/include/interface/vmcs_host)
 include_directories(/opt/vc/include)
+
 
 
 find_package (Threads)
@@ -29,8 +34,7 @@ set (COMMON_SOURCES
    RaspiHelpers.c)
 
 
-
-add_executable(take_picture  ${COMMON_SOURCES}  RaspiStill.c DHT22.c)
+add_executable(take_picture  ${COMMON_SOURCES} take_picture.c DHT22.c)
 
 
 target_link_libraries(take_picture

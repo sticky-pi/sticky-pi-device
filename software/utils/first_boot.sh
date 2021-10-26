@@ -42,13 +42,20 @@ grep "^LABEL=${SPI_DRIVE_LABEL}" /etc/fstab -c || (
 )
 
 echo "Setting dummy time"
-systemctl --now disable systemd-timesyncd.service
-timedatectl set-time "2000-01-01 00:00:00"
+hwclock --set --date "2000-01-01 00:00:00" --utc --noadjfile
+hwclock --hctosys --utc --noadjfile
 
-/usr/bin/take_picture.py --no-save -k
-systemctl enable ${SPI_TARGET_SERVICE}
-echo "Disabling  first boot script"
+echo "Getting time from data harvester"
+# todo here, try to sync time from harvester or from the internet?
+cat something_that_fails ||(
+echo "Failed. Getting time from public server"
+cat another_fail || echo "Failed too. Check internet connection"
+)
+
+
+#/usr/bin/sync_to_harvester.py --no-save -k
 # make the image read only if defined in env file
+
 if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   echo "Making read-only FS"
   (mount ${SD}p1 /boot
@@ -59,16 +66,9 @@ if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   cat /etc/fstab-backup > /etc/fstab
   echo 'tmpfs   /var/log    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'tmpfs   /var/tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
-
-  cp /etc/systemd/journald.conf /etc/systemd/journald.conf-backup
-  cat /etc/systemd/journald.conf-backup > /etc/systemd/journald.conf
-  echo Storage="none" >> /etc/systemd/journald.conf
-
-  ##fixme TEST THIS
-#  systemctl  disable systemd-logind.service
-  systemctl mask systemd-logind.service systemd-random-seed systemd-user-sessions.service
-
+  echo 'tmpfs   /tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
+  echo 'resolv_conf="/tmp/resolv.conf"' > /etc/resolvconf.conf
   history -c -w) ||
   umount ${SD}p1
 fi
-systemctl disable first_boot.service  &&  echo "All good." && sync && reboot
+

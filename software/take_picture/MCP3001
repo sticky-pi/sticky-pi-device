@@ -1,0 +1,23 @@
+this form https://stackoverflow.com/questions/24378430/reading-data-out-of-an-adc-mcp3001-with-python-spi works
+at the software layer should not need to load SPI as kenel module then...
+
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+
+def ReadMCP3001():
+    GPIO.setup(11, GPIO.OUT)
+    GPIO.setup(8, GPIO.OUT)
+    GPIO.setup(9, GPIO.IN)
+    GPIO.output(11, False)  # CLK low
+    GPIO.output(6, False)   # /CS low
+    adcvalue = 0
+    for i in range(13):
+        GPIO.output(11, True)
+        GPIO.output(11, False)
+        adcvalue <<= 1
+        if(GPIO.input(9)):
+            adcvalue |= 0x001
+    GPIO.output(8, True)    # /CS high
+    adcvalue &= 0x3ff
+    return adcvalue

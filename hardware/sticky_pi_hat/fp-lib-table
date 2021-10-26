@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name logo)(type KiCad)(uri /home/quentin/repos/sticky-pi/sticky-pi-device-git/hardware/sticky_pi_hat/logo_kicad)(options "")(descr logo))
+  (lib (name Microchip-MCP3001-I_ST-*)(type KiCad)(uri /home/quentin/repos/sticky-pi/sticky-pi-device-git/hardware/sticky_pi_hat/MCP3001)(options "")(descr Microchip-MCP3001-I_ST-*))
+)

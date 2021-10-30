@@ -10,11 +10,24 @@ if __name__ == '__main__':
                       default=False,
                       action='store_true')
 
-    parser.add_option("-u", "--user-requested",
-                      dest="user_requested",
-                      help="whether the user explcitely requested sync -- as opposed to an automatic trigger",
+
+    parser.add_option("-p", "--periodic",
+                      dest="periodic",
+                      help="whether sync was automatically triggered",
                       default=False,
                       action='store_true')
+
+
+    parser.add_option("-u", "--user-requested",
+                      dest="user_requested",
+                      help="whether the user explicitly requested sync -- as opposed to an automatic trigger",
+                      default=False,
+                      action='store_true')
+
+    parser.add_option("-b", "--battery-level",
+                      dest="battery_level",
+                      help="The remaining battery percent",
+                      default=None, type=int)
 
     (options, args) = parser.parse_args()
     option_dict = vars(options)

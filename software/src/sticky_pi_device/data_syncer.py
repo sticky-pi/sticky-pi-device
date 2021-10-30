@@ -1,6 +1,10 @@
 import time
 import os
 import logging
+import requests
+import glob
+import json
+
 from sticky_pi_device._version import __version__
 
 
@@ -43,9 +47,11 @@ class DataSyncer(object):
     _interface_timeout = 5  # s
     _interface_timeout_long = 20  # s when user requested (button). we wait way longer for interface!
 
-    def __init__(self, user_requested = False, no_files = False, dev_id = None):
+    def __init__(self, user_requested = False, periodic=False, battery_level=None, no_files = False, dev_id = None):
         self._config = ConfigHandler()
         self._user_requested = user_requested
+        self._periodic = periodic
+        self._battery_level = battery_level
         self._upload_files = not no_files
         if dev_id is None:
             from sticky_pi_device.utils import device_id
@@ -93,6 +99,9 @@ class DataSyncer(object):
 
     def _get_device_status(self):
         status = {"version": self._config.SPI_VERSION,
+                  "battery_level": self._battery_level,
+                  "periodic": self._periodic,
+                  "user_requested": self._user_requested,
                   "progress_skipping": 0, "progress_to_skip": 0,
                   "progress_uploading": 0, "progress_to_upload": 0,
                   "progress_errors": 0,
@@ -101,9 +110,6 @@ class DataSyncer(object):
         return status
 
     def _upload_images(self):
-        import requests
-        import glob
-        import json
         dev_id = self._device_id
         host = self._config.SPI_HARVESTER_HOSTNAME
         url_images_to_upload = f"http://{host}/images_to_upload/{dev_id}"

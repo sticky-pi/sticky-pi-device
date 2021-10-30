@@ -103,13 +103,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /// Video render needs at least 2 buffers.
 #define VIDEO_OUTPUT_BUFFERS_NUM 3
 
-#define MAX_USER_EXIF_TAGS      32
 #define MAX_EXIF_PAYLOAD_LENGTH 128
+#define MAX_EXIF_LONG_PAYLOAD_LENGTH 256
 
 #define CAMERA_NUM 0
 #define SENSOR_MODE 0
 
-int spi_im_w, spi_im_h, spi_im_jpeg_quality;
 
 /// Amount of time before first image taken to allow settling of
 /// exposure etc. in milliseconds.
@@ -117,7 +116,14 @@ int spi_im_w, spi_im_h, spi_im_jpeg_quality;
 struct stat st = {0};
 
 
+int spi_im_w, spi_im_h, spi_im_jpeg_quality;
 int GPIO_TO_WIRING_PI_MAP[]= {30, 31, 8, 9, 7, 21, 22, 11, 10, 13, 12, 14, 26, 23, 15, 16, 27, 0, 1, 24, 28, 29, 3, 4, 5, 6, 25, 2};
+
+#define CUSTOM_EXIF_KEY "EXIF.UserComment"
+#define CUSTOM_EXIF_HEADER "ver,temp,hum,bat,lum,lat,lng,alt,lsy"
+#define CUSTOM_EXIF_FORMAT "%s,%.1f,%.1f,%i,%.1f,%.5f,%.5f,%.1f,%s"
+#define CUSTOM_EXIF_TEMPLATE CUSTOM_EXIF_KEY "=" CUSTOM_EXIF_HEADER "\n" CUSTOM_EXIF_FORMAT
+
 
 /** Structure containing all state information for the current run
  */
@@ -128,13 +134,18 @@ typedef struct
 
    struct tm *timeinfo;
    char *linkname;                     /// filename of output file
-   float temp;
-   float hum;
-   float bat;  // battery level
 
-    float no_flash_exposure_time;
-    float no_flash_analog_gain;
-    float no_flash_digital_gain;
+     float temp; //4
+     float  hum; // 4
+     int bat; // 4
+
+     float alt; //4
+     double lng; // 8
+     double lat; // 8
+
+    float lum;
+    char last_sync[20];
+
 
    MMAL_FOURCC_T encoding;             /// Encoding to use for the output file.
    int restart_interval;               /// JPEG restart interval. 0 for none.
@@ -158,9 +169,9 @@ typedef struct
 } PORT_USERDATA;
 
 // function prototypes
-void custom_exif_field(RASPISTILL_STATE *state, char *value);
+static MMAL_STATUS_T   add_custom_exif_field(RASPISTILL_STATE *state);
 static void logging_error( char * pattern, ...);
-
+static void logging( char * pattern, ...);
 
 
 /**
@@ -176,12 +187,19 @@ static void default_status(RASPISTILL_STATE *state, struct tm *timeinfo)
       vcos_assert(0);
       return;
    }
-
-
-
    memset(state, 0, sizeof(*state));
    strncpy(state->camera_name, "(Unknown)", MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN);
-//   raspicommonsettings_set_defaults(&state->common_settings);
+
+
+    state->temp=-300;
+    state->hum -1;
+    state->bat = -1;
+    state->lum = 0.0;
+    state->lat = 0.0;
+    state->lng = 0.0;
+    state->alt = 0.0;
+    strcpy(state->last_sync, "2000-01-01 00:00:00");
+
    state->timeinfo = timeinfo;
    state->linkname = NULL;
    state->camera_component = NULL;
@@ -228,9 +246,6 @@ static void dump_status(RASPISTILL_STATE *state)
       fprintf(stderr, " no\n");
    }
    fprintf(stderr, "\n\n");
-
-
-
 
    raspicamcontrol_dump_parameters(&state->camera_parameters);
 }
@@ -331,8 +346,6 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
 
    MMAL_PARAMETER_INT32_T camera_num =
    {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_num)}, CAMERA_NUM};
-
-
 
    status = mmal_port_parameter_set(camera->control, &camera_num.hdr);
 
@@ -497,7 +510,6 @@ static MMAL_STATUS_T create_camera_component(RASPISTILL_STATE *state)
       vcos_log_error("camera component couldn't be enabled");
       goto error;
    }
-
 
    state->camera_component = camera;
    return status;
@@ -667,28 +679,112 @@ static void destroy_encoder_component(RASPISTILL_STATE *state)
 static MMAL_STATUS_T add_exif_tag(RASPISTILL_STATE *state, const char *exif_tag)
 {
    MMAL_STATUS_T status;
-   MMAL_PARAMETER_EXIF_T *exif_param = (MMAL_PARAMETER_EXIF_T*)calloc(sizeof(MMAL_PARAMETER_EXIF_T) + MAX_EXIF_PAYLOAD_LENGTH, 1);
+   int payload_length = MAX_EXIF_PAYLOAD_LENGTH;
+
+   MMAL_PARAMETER_EXIF_T *exif_param = (MMAL_PARAMETER_EXIF_T*)calloc(sizeof(MMAL_PARAMETER_EXIF_T) + payload_length, 1);
 
    vcos_assert(state);
    vcos_assert(state->encoder_component);
 
    // Check to see if the tag is present or is indeed a key=value pair.
-   if (!exif_tag || strchr(exif_tag, '=') == NULL || strlen(exif_tag) > MAX_EXIF_PAYLOAD_LENGTH-1)
+   if (!exif_tag || strchr(exif_tag, '=') == NULL || strlen(exif_tag) > payload_length-1){
+      logging_error("Failed to save exif field: %s", exif_tag);
       return MMAL_EINVAL;
-
+    }
    exif_param->hdr.id = MMAL_PARAMETER_EXIF;
 
-   strncpy((char*)exif_param->data, exif_tag, MAX_EXIF_PAYLOAD_LENGTH-1);
-
+   strncpy((char*)exif_param->data, exif_tag, payload_length-1);
    exif_param->hdr.size = sizeof(MMAL_PARAMETER_EXIF_T) + strlen((char*)exif_param->data);
-
    status = mmal_port_parameter_set(state->encoder_component->output[0], &exif_param->hdr);
-
    free(exif_param);
 
    return status;
 }
 
+
+static MMAL_STATUS_T  add_custom_exif_field(RASPISTILL_STATE *state){
+    char path[64];
+    char buffer[128] = "";
+    struct stat attr;
+
+    sprintf(path, "%s/%s", SPI_IMAGE_DIR, SPI_METADATA_FILENAME);
+    if(stat(path, &attr) < 0){
+        logging_error("No metadata file found!");
+    }
+
+    else{
+        // parse metadata file should contain data like:
+//        char file_buffer[512] = "{1}";
+        char file_buffer[512] = "";
+        int r;
+
+        FILE *fp;
+        fp = fopen (path, "r");
+        fgets(file_buffer, 512-1, fp);
+        fclose(fp);
+
+        jsmn_parser p;
+        jsmntok_t t[32]; /* We expect no more than 128 JSON tokens */
+
+        jsmn_init(&p);
+        r = jsmn_parse(&p, file_buffer, strlen(file_buffer), t, 32); // "s" is the char array holding the json content
+
+        if(r <0 ||
+            t[0].size == 0  // no children
+            ){
+            logging_error("Issues parsing json metadata: `%s'. Expect `{'a':1, ...}'", file_buffer);
+        }
+
+        else{
+            unsigned int i;
+            logging("Size: %i", t[0].size);
+            for(i=1; i != r; ++i){
+                if(t[i].size != 1){
+                    continue;
+                }
+                jsmntok_t key = t[i];
+
+                unsigned int length = key.end - key.start;
+                char key_string[length + 1];
+                memcpy(key_string, &file_buffer[key.start], length);
+                key_string[length] = '\0';
+
+                jsmntok_t value = t[i+1];
+
+                length = value.end - value.start;
+                char value_string[length + 1];
+                memcpy(value_string, &file_buffer[value.start], length);
+                value_string[length] = '\0';
+                if (strcmp(key_string, "lat") == 0){
+                    state->lat = atof(value_string);
+                }
+                else if (strcmp(key_string, "lng") == 0){
+                    state->lng = atof(value_string);
+                }
+                else if (strcmp(key_string, "alt") == 0){
+                  state->alt = atof(value_string);
+                }
+                else if (strcmp(key_string, "datetime") == 0){
+                    strcpy(state->last_sync, value_string);
+                }
+                else{
+                    logging_error("Unexpected token in metadata: `%s:%s'", key_string, value_string);
+                }
+            }
+            }
+        }
+    snprintf(buffer, 128,CUSTOM_EXIF_TEMPLATE,
+        SPI_VERSION,
+        state->temp,
+        state->hum,
+        state->bat,
+        state->lum,
+        state->lat,
+        state->lng,
+        state->alt,
+        state->last_sync);
+    return add_exif_tag(state, buffer);
+}
 
 
 /**
@@ -707,10 +803,8 @@ static void add_exif_tags(RASPISTILL_STATE *state)
 
    snprintf(model_buf, 32, "IFD0.Model=RP_%s", state->camera_name);
    add_exif_tag(state, model_buf);
-
-
-
-
+   snprintf(model_buf, 32, "IFD0.Make=StickyPi");
+   add_exif_tag(state, model_buf);
    snprintf(time_buf, sizeof(time_buf),
             "%04d:%02d:%02d %02d:%02d:%02d",
             state->timeinfo->tm_year+1900,
@@ -727,12 +821,10 @@ static void add_exif_tags(RASPISTILL_STATE *state)
    add_exif_tag(state, exif_buf);
 
    snprintf(exif_buf, sizeof(exif_buf), "IFD0.DateTime=%s", time_buf);
-   add_exif_tag(state, exif_buf);
+    add_exif_tag(state, exif_buf);
 
-   char value[512];
-   custom_exif_field(state, value);
-   add_exif_tag(state, value);
-}
+    add_custom_exif_field(state);
+    }
 
 
 /**
@@ -824,7 +916,7 @@ static void * set_picture_path(struct tm *timeinfo, char *picture_path){
 //    memset (device_name,'\0',9);
 
    set_device_id(device_name);
-   if(device_name[0] != '\0'){
+   if(device_name[0] == '\0'){
         logging_error("Cannot set device name!");
    }
 
@@ -947,56 +1039,51 @@ int must_try_to_sync() {
     return 0 ;
 }
 
-void custom_exif_field(RASPISTILL_STATE *state, char *value){
-    char path[64];
-    struct stat attr;
 
-    sprintf(path, "%s/%s", SPI_IMAGE_DIR, SPI_METADATA_FILENAME);
-    if(stat(path, &attr) < 0){
-        value = "{}";
-        logging_error("No metadata file found!");
-    }
-
-    else{
-        FILE *fp;
-        fp = fopen (path, "r");
-
-        // read all in buffer
-        fgets(value, 512-1, fp);
-        fclose(fp);
-        char * ch_ptr = NULL;
-
-        ch_ptr = strrchr(value, '}');
-        if(ch_ptr == NULL){
-            logging_error("Could not find '}' in metadata file!");
-            value = "{";
-        }
-        else{
-            *ch_ptr = '\0';
-        }
-        // last "}" should become a ",",
-        char value_copy [1024];
-        strcpy(value_copy, value);
-        sprintf(value, "IFD0.Make=%s, \"temp\"=%02f, \"hum\"=%02f, \"bat\"=%02f, \"no_flash_exposure_time\"=%06f, \"no_flash_analog_gain\"=%06f, \"no_flash_digital_gain\"=%06f, \"version\"=\"%s\"}",
-                value_copy,
-                state->temp,
-                state->hum,
-                state->bat,
-                state->no_flash_exposure_time,
-                state->no_flash_analog_gain,
-                state->no_flash_digital_gain,
-                SPI_VERSION
-                );
-    }
-
-
-}
 
 
 void read_battery_level(RASPISTILL_STATE *state){
-    state->bat = 0.5;
-    //todo
-    //fixme
+// translated from https://stackoverflow.com/questions/24378430/reading-data-out-of-an-adc-mcp3001-with-python-spi works
+    int gpio_11 = GPIO_TO_WIRING_PI_MAP[11];
+    int gpio_8 = GPIO_TO_WIRING_PI_MAP[8];
+    int gpio_9 = GPIO_TO_WIRING_PI_MAP[9];
+    int gpio_6 = GPIO_TO_WIRING_PI_MAP[6];
+
+//    GPIO.setup(11, GPIO.OUT)
+    pinMode(gpio_11, OUTPUT);
+
+//    GPIO.setup(8, GPIO.OUT)
+    pinMode(gpio_8, OUTPUT);
+
+//    GPIO.setup(9, GPIO.IN)
+    pinMode(gpio_9, INPUT);
+
+//    GPIO.output(11, False)  # CLK low
+    digitalWrite(gpio_11,LOW);
+
+//    GPIO.output(6, False)   # /CS low
+    digitalWrite(gpio_6,LOW);
+
+    int adcvalue = 0;
+    int i;
+    int input_val;
+    for(i=0; i != 13; ++i){
+//        GPIO.output(11, True)
+        digitalWrite(gpio_11,HIGH);
+//        GPIO.output(11, False)
+        digitalWrite(gpio_11,LOW);
+        adcvalue <<= 1;
+        input_val = digitalRead(gpio_9);
+//        if(GPIO.input(9)):
+        if(input_val){
+            adcvalue |= 0x001;
+        }
+    }
+//            adcvalue |= 0x001
+    digitalWrite(gpio_6, HIGH);
+    adcvalue &= 0x3ff;
+    state->bat = (int) (100.0 * ((float) adcvalue / 1024.0));
+
 }
 
 int main(int argc, const char **argv)
@@ -1142,8 +1229,6 @@ int main(int argc, const char **argv)
         read_dht_and_sleep(&state);
         read_battery_level(&state);
 
-
-
          vcos_assert(use_filename == NULL && final_filename == NULL);
          status = create_filenames(&final_filename, &use_filename, filename);
          if (status  != MMAL_SUCCESS)
@@ -1274,28 +1359,27 @@ error:
     if (status != MMAL_SUCCESS)
         raspicamcontrol_check_configuration(128);
 
-
-    // the sync process
-    // fixme HERE we should sync every SYNC_PERIOD_MINUTES min
-    // we could look at the delta_t between the last and the one before last file
-    // if the target hour is in between, we sync...
-    // if the user requested sync, we sync
-
    //else we turn off!
+   char command_buffer[64]="";
+   char flag[4]="";
+
     if(was_turned_on_by_button){
         logging("Device manually turned on");
-        system("sync_to_harvester.py -u");
+        strcpy(flag,"-u");
     }
     else if(periodic_sync_attempt){
         logging("Periodic syncing attempt");
-        system("sync_to_harvester.py -p");
+        strcpy(flag,"-p");
     }
+
     else{
         logging("Not syncing");
         }
 
+    sprintf(command_buffer, "%s -b %i %s", "sync_to_harvester.py", state.bat, flag);
 
-
+    if(strlen(flag) >0)
+        system(command_buffer);
 
     // the turnoff process
     system("sync");

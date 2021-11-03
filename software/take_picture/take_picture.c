@@ -62,7 +62,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-
+#include <math.h>
 
 #include "bcm_host.h"
 #include "interface/vcos/vcos.h"
@@ -121,7 +121,7 @@ int GPIO_TO_WIRING_PI_MAP[]= {30, 31, 8, 9, 7, 21, 22, 11, 10, 13, 12, 14, 26, 2
 
 #define CUSTOM_EXIF_KEY "EXIF.UserComment"
 #define CUSTOM_EXIF_HEADER "ver,temp,hum,bat,lum,lat,lng,alt,lsy"
-#define CUSTOM_EXIF_FORMAT "%s,%.1f,%.1f,%i,%.1f,%.5f,%.5f,%.1f,%s"
+#define CUSTOM_EXIF_FORMAT "%s,%.1f,%.1f,%i,%.2f,%.5f,%.5f,%.1f,%s"
 #define CUSTOM_EXIF_TEMPLATE CUSTOM_EXIF_KEY "=" CUSTOM_EXIF_HEADER "\n" CUSTOM_EXIF_FORMAT
 
 
@@ -737,7 +737,6 @@ static MMAL_STATUS_T  add_custom_exif_field(RASPISTILL_STATE *state){
 
         else{
             unsigned int i;
-            logging("Size: %i", t[0].size);
             for(i=1; i != r; ++i){
                 if(t[i].size != 1){
                     continue;
@@ -1086,6 +1085,27 @@ void read_battery_level(RASPISTILL_STATE *state){
 
 }
 
+
+void calc_lum(RASPISTILL_STATE *state, MMAL_COMPONENT_T *camera)
+{
+//    MMAL_PARAMETER_INPUT_CROP_T crop;
+   MMAL_PARAMETER_CAMERA_SETTINGS_T settings;
+
+
+   settings.hdr.id = MMAL_PARAMETER_CAMERA_SETTINGS;
+   settings.hdr.size = sizeof(settings);
+
+   if (mmal_port_parameter_get(camera->control, &settings.hdr) != MMAL_SUCCESS){
+        logging_error("Issue reading camera settings");
+        return;
+   }
+//   logging("%f,  %f,", settings.analog_gain, settings.digital_gain);
+   state->lum = log10(1e6 / settings.exposure);
+
+}
+
+
+
 int main(int argc, const char **argv)
 {
 
@@ -1228,7 +1248,7 @@ int main(int argc, const char **argv)
 
         read_dht_and_sleep(&state);
         read_battery_level(&state);
-
+        calc_lum(&state, state.camera_component);
          vcos_assert(use_filename == NULL && final_filename == NULL);
          status = create_filenames(&final_filename, &use_filename, filename);
          if (status  != MMAL_SUCCESS)
@@ -1386,7 +1406,7 @@ error:
     int spi_off_gpio =   atoi(SPI_OFF_GPIO);
     int off_pin = GPIO_TO_WIRING_PI_MAP[spi_off_gpio];
     pinMode(off_pin, OUTPUT);
-    digitalWrite(off_pin, HIGH);
+    //digitalWrite(off_pin, HIGH);
 
     return exit_code;
 }

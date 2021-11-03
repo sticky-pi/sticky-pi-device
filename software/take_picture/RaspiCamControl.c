@@ -898,6 +898,9 @@ int raspicamcontrol_set_gains(MMAL_COMPONENT_T *camera, float analog, float digi
 
 
 
+
+
+
 /**
  * Asked GPU how much memory it has allocated
  *

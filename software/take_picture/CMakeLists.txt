@@ -45,7 +45,9 @@ target_link_libraries(take_picture
      ${VCOS_LIBRARY}
      ${BCM_HOST_LIBRARY}
      ${CMAKE_THREAD_LIBS_INIT}
-     ${WIRINGPI_LIBRARIES})
+     ${WIRINGPI_LIBRARIES}
+     m #libm
+     )
 
 INCLUDE(cmake_env_vars.txt)
 

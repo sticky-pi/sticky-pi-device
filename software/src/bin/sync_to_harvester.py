@@ -29,7 +29,9 @@ if __name__ == '__main__':
                       help="The remaining battery percent",
                       default=None, type=int)
 
+
     (options, args) = parser.parse_args()
     option_dict = vars(options)
+
     ds = DataSyncer(**option_dict)
     ds.sync()

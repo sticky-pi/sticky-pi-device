@@ -8,7 +8,7 @@ setup(
     version=__version__,
     long_description=__doc__,
     packages=find_packages(),
-    scripts=['bin/sync_to_harvester.py', 'bin/flash_blink.py'],
+    scripts=['bin/sync_to_harvester.py', 'bin/flash_blink.py', 'bin/test_routine.py'],
     include_package_data=True,
     zip_safe=False,
     install_requires=['rpi_ws281x',

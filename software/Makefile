@@ -6,7 +6,7 @@ PYTHON_RESOURCES := $(shell find src -name \*.py -print)
 BASE_OS_IMG_NAME:= base-${OS_IMG_NAME}
 CUSTOM_OS_IMG_NAME:= custom-${OS_IMG_NAME}
 DT_BLOB := ./os_stub/boot/dt-blob.bin
-PYTHON_PACKAGE :=./os_stub/tmp/sticky_pi/sticky_pi_device.tar.gz
+PYTHON_PACKAGE :=./os_stub/opt/sticky_pi/sticky_pi_device.tar.gz
 NET_CONF :=./os_stub/etc/wpa_supplicant/wpa_supplicant.conf
 
 .PHONY: base_os custom_os device_tree all
@@ -31,7 +31,9 @@ ${BASE_OS_IMG_NAME}.gz: utils/make_base_os.sh
 
 
 ${DT_BLOB}: utils/dt-blob.dts
-	@dtc -I dts -O dtb $< -o $@ 2> /dev/null
+	@sed  "s/<SPI_FLASH_GPIO>/${SPI_FLASH_GPIO}/g" $< > $<.parsed.dts
+	@#echo $<.parsed.dts
+	@dtc -I dts -O dtb $<.parsed.dts -o $@ 2> /dev/null
 	@echo Made $@
 
 ${PYTHON_PACKAGE}: ${PYTHON_RESOURCES} .env

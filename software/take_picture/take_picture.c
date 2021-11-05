@@ -1126,7 +1126,7 @@ int main(int argc, const char **argv)
 	}
     else if (is_test_gpio_up()){
         logging("Testing bridge is on, entering testing mode");
-        return atoi(SPI_TAKE_PICTURE_TESTING_STATUS);
+        system("test_routine.py");
     }
 
     int was_turned_on_by_button = is_manual_on_gpio_up();
@@ -1402,11 +1402,11 @@ error:
         system(command_buffer);
 
     // the turnoff process
-    system("sync");
+    system("sync && umount /sticky_pi_data"); //fixme this should be a dynamic name using global vars
     int spi_off_gpio =   atoi(SPI_OFF_GPIO);
     int off_pin = GPIO_TO_WIRING_PI_MAP[spi_off_gpio];
     pinMode(off_pin, OUTPUT);
-    //digitalWrite(off_pin, HIGH);
+    digitalWrite(off_pin, HIGH);
 
     return exit_code;
 }

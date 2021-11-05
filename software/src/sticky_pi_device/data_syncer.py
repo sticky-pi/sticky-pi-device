@@ -2,6 +2,7 @@ import time
 import os
 import logging
 import requests
+# import faster_than_requests as requests
 import glob
 import json
 
@@ -90,6 +91,12 @@ class DataSyncer(object):
     def _ping_harvester(self, timeout = 15):
         host = self._config.SPI_HARVESTER_HOSTNAME
         start = time.time()
+        #     # turn on wifi interface
+        os.system("ip link set wlan0 up")
+        # # in the background, initiate wpa_supplicant. We are not waiting for success
+        os.system("wpa_supplicant -Dnl80211 -iwlan0 -c/etc/wpa_supplicant/wpa_supplicant.conf")
+        # # we will requests a dynamic IP from the router. also not waiting (-nw)
+        os.system("dhclient wlan0 -nw")
         while time.time() - start < timeout:
             response = os.system(f"ping -c 1 " + host)
             if response == 0:
@@ -172,7 +179,7 @@ class DataSyncer(object):
             logging.warning("Removing old files")
             self._remove_old_files()
 
-        # flush logfle to have last messages
+        # flush logfile to have last messages
         # logger = logging.getLogger()
         # logger.handlers[0].flush()
 

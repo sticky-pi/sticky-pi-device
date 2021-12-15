@@ -67,9 +67,9 @@ F 1 "TPS63002" H 7950 2376 50  0000 C CNN
 F 2 "Package_SON:Texas_DSC0010J_ThermalVias" H 8800 1250 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/tps63002.pdf" H 7650 2350 50  0001 C CNN
 F 4 "Texas Instruments" H 7950 1800 50  0001 C CNN "Manufacturer"
-F 5 "TPS63002DRCR" H 7950 1800 50  0001 C CNN "part_number"
+F 5 "TPS63002" H 7950 1800 50  0001 C CNN "part_number"
 F 6 "" H 7950 1800 50  0001 C CNN "Vendor"
-F 7 "TPS63002DRCR" H 7950 1800 50  0001 C CNN "Part"
+F 7 "TPS63002" H 7950 1800 50  0001 C CNN "Part"
 	1    7950 1800
 	1    0    0    -1  
 $EndComp
@@ -86,9 +86,9 @@ F 1 "TPL5110" H 4650 1750 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-6" H 4900 1350 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/tpl5110.pdf" H 4700 950 50  0001 C CNN
 F 4 "Texas Instruments" H 4900 1350 50  0001 C CNN "Manufacturer"
-F 5 "TPL5110QDDCTQ1" H 4900 1350 50  0001 C CNN "part_number"
+F 5 "TPL5110" H 4900 1350 50  0001 C CNN "part_number"
 F 6 "" H 4900 1350 50  0001 C CNN "Vendor"
-F 7 "TPL5110QDDCTQ1" H 4900 1350 50  0001 C CNN "Part"
+F 7 "TPL5110" H 4900 1350 50  0001 C CNN "Part"
 	1    4900 1350
 	1    0    0    -1  
 $EndComp
@@ -476,7 +476,7 @@ $Comp
 L Device:R R7
 U 1 1 61A13B53
 P 4150 4300
-F 0 "R7" V 4250 4300 50  0000 C CNN
+F 0 "R7" V 4050 4300 50  0000 C CNN
 F 1 "10k" V 4150 4300 50  0000 C CNN
 F 2 "Resistor_SMD:R_2010_5025Metric" V 4080 4300 50  0001 C CNN
 F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-RC_Group_51_RoHS_L_11.pdf" H 4150 4300 50  0001 C CNN
@@ -658,18 +658,7 @@ F 6 "SM4001PL" H 6150 5050 50  0001 C CNN "part_number"
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	5350 6300 5150 6300
-$Comp
-L power:Earth #PWR0123
-U 1 1 618E310E
-P 5150 6300
-F 0 "#PWR0123" H 5150 6050 50  0001 C CNN
-F 1 "Earth" H 5150 6150 50  0001 C CNN
-F 2 "" H 5150 6300 50  0001 C CNN
-F 3 "~" H 5150 6300 50  0001 C CNN
-	1    5150 6300
-	1    0    0    -1  
-$EndComp
+	5350 6300 5250 6300
 $Comp
 L power:+3.3V #PWR0124
 U 1 1 618F1751
@@ -687,8 +676,8 @@ Wire Wire Line
 	5350 7000 5100 7000
 Wire Wire Line
 	5100 7000 5100 6950
-Text GLabel 4850 6000 0    50   Input ~ 0
-drv
+Text GLabel 4950 6000 0    50   Input ~ 0
+batt_io
 $Comp
 L power:Earth #PWR0125
 U 1 1 619114BA
@@ -720,7 +709,7 @@ F 1 "DS1307Z+" V 8900 4050 50  0000 L CNN
 F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 9050 3800 50  0001 C CNN
 F 3 "https://datasheets.maximintegrated.com/en/ds/DS1307.pdf" H 9050 4100 50  0001 C CNN
 F 4 "Maxim Integrated" H 9050 4300 50  0001 C CNN "Manufacturer"
-F 5 "DS1307+" H 9050 4300 50  0001 C CNN "part_number"
+F 5 "DS1307Z+" H 9050 4300 50  0001 C CNN "part_number"
 F 6 "" H 9050 4300 50  0001 C CNN "Vendor"
 F 7 "DS1307Z+" H 9050 4300 50  0001 C CNN "Part"
 	1    9050 4300
@@ -756,7 +745,6 @@ F 21 "MCP3001-I_ST" H 5250 6200 50  0001 C CNN "part_number"
 	1    5250 6200
 	1    0    0    -1  
 $EndComp
-Connection ~ 5150 6300
 $Comp
 L Device:C C6
 U 1 1 619E8632
@@ -775,7 +763,7 @@ $EndComp
 Connection ~ 6300 5050
 Text GLabel 6900 5250 3    50   Input ~ 0
 GPIO_17_R
-Text GLabel 4300 4300 2    50   Input ~ 0
+Text GLabel 4450 4300 2    50   Input ~ 0
 GPIO_23
 Text GLabel 3450 3700 2    50   BiDi ~ 0
 GPIO_27
@@ -847,7 +835,7 @@ Connection ~ 7350 2000
 Wire Wire Line
 	6800 1700 6550 1700
 Wire Wire Line
-	7350 1700 7200 1700
+	7350 1700 7250 1700
 Text GLabel 5400 1450 2    50   Input ~ 0
 GPIO_17_R
 Wire Wire Line
@@ -893,16 +881,16 @@ GPIO_3
 $Comp
 L Device:R R4
 U 1 1 615AD828
-P 2350 6400
-F 0 "R4" V 2450 6450 50  0000 L CNN
-F 1 "2.2k" V 2350 6300 50  0000 L CNN
-F 2 "Resistor_SMD:R_2010_5025Metric" V 2280 6400 50  0001 C CNN
-F 3 "https://www.seielect.com/catalog/sei-rmcf_rmcp.pdf" H 2350 6400 50  0001 C CNN
-F 4 "RMCF2010JT2K20" H 2350 6400 50  0001 C CNN "part_number"
-F 5 "Stackpole Electronics, Inc." H 2350 6400 50  0001 C CNN "Manufacturer"
-F 6 "" H 2350 6400 50  0001 C CNN "Vendor"
-F 7 "RMCF2010JT2K20" H 2350 6400 50  0001 C CNN "Part"
-	1    2350 6400
+P 2250 6400
+F 0 "R4" V 2350 6350 50  0000 L CNN
+F 1 "2.2k" V 2250 6300 50  0000 L CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 2180 6400 50  0001 C CNN
+F 3 "https://www.seielect.com/catalog/sei-rmcf_rmcp.pdf" H 2250 6400 50  0001 C CNN
+F 4 "RMCF2010JT2K20" H 2250 6400 50  0001 C CNN "part_number"
+F 5 "Stackpole Electronics, Inc." H 2250 6400 50  0001 C CNN "Manufacturer"
+F 6 "" H 2250 6400 50  0001 C CNN "Vendor"
+F 7 "RMCF2010JT2K20" H 2250 6400 50  0001 C CNN "Part"
+	1    2250 6400
 	0    -1   -1   0   
 $EndComp
 Text GLabel 2550 6100 0    50   Output ~ 0
@@ -918,9 +906,7 @@ Wire Wire Line
 	3350 6100 3200 6100
 Text GLabel 3050 6600 2    50   Output ~ 0
 GPIO_23
-Wire Wire Line
-	2550 6400 2500 6400
-Text GLabel 2200 6400 0    50   Output ~ 0
+Text GLabel 1800 6400 3    50   Output ~ 0
 GPIO_17_R
 Text GLabel 3050 7000 2    50   Input ~ 0
 GPIO_8_C0
@@ -983,7 +969,7 @@ F 0 "J2" H 2800 7200 50  0000 C CNN
 F 1 "Conn_02x13_Odd_Even" H 2800 5800 50  0000 C CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_2x13_P2.54mm_Vertical" H 2750 6500 50  0001 C CNN
 F 3 "https://www.te.com/commerce/DocumentDelivery/DDEController?Action=srchrtrv&DocNm=215307&DocType=Customer+Drawing&DocLang=English" H 2750 6500 50  0001 C CNN
-F 4 "1-215307-0" H 2750 6500 50  0001 C CNN "part_number"
+F 4 "1-215307-3" H 2750 6500 50  0001 C CNN "part_number"
 F 5 "1-215307-3 " H 2750 6500 50  0001 C CNN "Part"
 F 6 "TE Connectivity AMP Connectors" H 2750 6500 50  0001 C CNN "Manufacturer"
 	1    2750 6500
@@ -1046,8 +1032,6 @@ F 3 "" H 6550 1600 50  0001 C CNN
 $EndComp
 Connection ~ 6550 1600
 Wire Wire Line
-	7050 2000 7000 2000
-Wire Wire Line
 	7550 1600 6750 1600
 $Comp
 L Transistor_FET:BSS84 Q2
@@ -1063,7 +1047,7 @@ F 6 "AO3415A" H 7000 1800 50  0001 C CNN "part_number"
 	1    7000 1800
 	0    1    -1   0   
 $EndComp
-Text GLabel 7050 2000 2    50   Input ~ 0
+Text GLabel 6850 2000 0    50   Input ~ 0
 drv
 Connection ~ 6750 1600
 Wire Wire Line
@@ -1207,40 +1191,148 @@ Wire Wire Line
 $Comp
 L Device:R R9
 U 1 1 617E4831
-P 5000 6000
-F 0 "R9" V 4900 6050 50  0000 C CNN
-F 1 "49.9k" V 5000 6000 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 4930 6000 50  0001 C CNN
-F 3 "https://www.vishay.com/docs/28758/tnpw_e3.pdf" H 5000 6000 50  0001 C CNN
-F 4 "TNPW080549K9FHEA" H 5000 6000 50  0001 C CNN "part_number"
-F 5 "Vishay Dale" H 5000 6000 50  0001 C CNN "Manufacturer"
-F 6 "" H 5000 6000 50  0001 C CNN "Vendor"
-F 7 "TNPW080549K9FHEA" H 5000 6000 50  0001 C CNN "Part"
-	1    5000 6000
+P 5100 6000
+F 0 "R9" V 5000 6050 50  0000 C CNN
+F 1 "49.9k" V 5100 6000 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 5030 6000 50  0001 C CNN
+F 3 "https://www.vishay.com/docs/28758/tnpw_e3.pdf" H 5100 6000 50  0001 C CNN
+F 4 "TNPW080549K9FHEA" H 5100 6000 50  0001 C CNN "part_number"
+F 5 "Vishay Dale" H 5100 6000 50  0001 C CNN "Manufacturer"
+F 6 "" H 5100 6000 50  0001 C CNN "Vendor"
+F 7 "TNPW080549K9FHEA" H 5100 6000 50  0001 C CNN "Part"
+	1    5100 6000
 	0    -1   -1   0   
 $EndComp
-$Comp
-L Device:R R10
-U 1 1 617EEEAC
-P 5150 6150
-F 0 "R10" V 5250 6150 50  0000 C CNN
-F 1 "75k" V 5150 6150 50  0000 C CNN
-F 2 "Resistor_SMD:R_2010_5025Metric" V 5080 6150 50  0001 C CNN
-F 3 "https://www.koaspeer.com/pdfs/RK73H.pdf" H 5150 6150 50  0001 C CNN
-F 4 "RK73H2HTTE7502F" H 5150 6150 50  0001 C CNN "part_number"
-F 5 "KOA Speer Electronics, Inc." H 5150 6150 50  0001 C CNN "Manufacturer"
-F 6 "" H 5150 6150 50  0001 C CNN "Vendor"
-F 7 "RK73H2HTTE7502F" H 5150 6150 50  0001 C CNN "Part"
-	1    5150 6150
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	5150 6000 5350 6000
 Wire Wire Line
 	5350 6000 5350 6200
-Connection ~ 5150 6000
 Wire Notes Line
 	5450 5700 7850 5700
 Wire Notes Line
 	5450 4750 7850 4750
+$Comp
+L Device:CP1 C7
+U 1 1 618224EA
+P 4150 1500
+F 0 "C7" H 3950 1600 50  0000 L CNN
+F 1 "47uF" H 3950 1400 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_5x5.3" H 4150 1500 50  0001 C CNN
+F 3 "https://www.we-online.de/katalog/datasheet/865080242004.pdf" H 4150 1500 50  0001 C CNN
+F 4 "865080242004" H 4150 1500 50  0001 C CNN "part_number"
+F 5 "Würth Elektronik" H 4150 1500 50  0001 C CNN "Manufacturer"
+F 6 "" H 4150 1500 50  0001 C CNN "Vendor"
+F 7 "865080242004" H 4150 1500 50  0001 C CNN "Part"
+	1    4150 1500
+	1    0    0    -1  
+$EndComp
+Connection ~ 4150 1350
+$Comp
+L power:Earth #PWR0130
+U 1 1 6182505F
+P 4150 1650
+F 0 "#PWR0130" H 4150 1400 50  0001 C CNN
+F 1 "Earth" H 4150 1500 50  0001 C CNN
+F 2 "" H 4150 1650 50  0001 C CNN
+F 3 "~" H 4150 1650 50  0001 C CNN
+	1    4150 1650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7000 2000 6850 2000
+Text GLabel 7050 2300 0    50   Output ~ 0
+batt_io
+Wire Wire Line
+	7250 1700 7250 2300
+Wire Wire Line
+	7250 2300 7050 2300
+Connection ~ 7250 1700
+Wire Wire Line
+	7250 1700 7200 1700
+$Comp
+L Device:R R10
+U 1 1 617EEEAC
+P 5250 6150
+F 0 "R10" V 5350 6150 50  0000 C CNN
+F 1 "75k" V 5250 6150 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 5180 6150 50  0001 C CNN
+F 3 "https://www.koaspeer.com/pdfs/RK73H.pdf" H 5250 6150 50  0001 C CNN
+F 4 "RK73H2HTTE7502F" H 5250 6150 50  0001 C CNN "part_number"
+F 5 "KOA Speer Electronics, Inc." H 5250 6150 50  0001 C CNN "Manufacturer"
+F 6 "" H 5250 6150 50  0001 C CNN "Vendor"
+F 7 "RK73H2HTTE7502F" H 5250 6150 50  0001 C CNN "Part"
+	1    5250 6150
+	1    0    0    -1  
+$EndComp
+Connection ~ 5250 6000
+Wire Wire Line
+	5250 6000 5350 6000
+Connection ~ 5250 6300
+$Comp
+L power:Earth #PWR0123
+U 1 1 618E310E
+P 5250 6300
+F 0 "#PWR0123" H 5250 6050 50  0001 C CNN
+F 1 "Earth" H 5250 6150 50  0001 C CNN
+F 2 "" H 5250 6300 50  0001 C CNN
+F 3 "~" H 5250 6300 50  0001 C CNN
+	1    5250 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R11
+U 1 1 61CC609A
+P 2050 6250
+F 0 "R11" V 1950 6250 50  0000 C CNN
+F 1 "10k" V 2050 6250 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 1980 6250 50  0001 C CNN
+F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-RC_Group_51_RoHS_L_11.pdf" H 2050 6250 50  0001 C CNN
+F 4 "RC2010JK-0710KL" H 2050 6250 50  0001 C CNN "part_number"
+F 5 "YAGEO" H 2050 6250 50  0001 C CNN "Manufacturer"
+F 6 "" H 2050 6250 50  0001 C CNN "Vendor"
+F 7 "RC2010JK-0710KL" H 2050 6250 50  0001 C CNN "Part"
+	1    2050 6250
+	0    1    1    0   
+$EndComp
+$Comp
+L power:Earth #PWR0131
+U 1 1 61CF7D17
+P 1900 6250
+F 0 "#PWR0131" H 1900 6000 50  0001 C CNN
+F 1 "Earth" H 1900 6100 50  0001 C CNN
+F 2 "" H 1900 6250 50  0001 C CNN
+F 3 "~" H 1900 6250 50  0001 C CNN
+	1    1900 6250
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R12
+U 1 1 61CFD666
+P 4350 4150
+F 0 "R12" V 4450 4150 50  0000 C CNN
+F 1 "10k" V 4350 4150 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 4280 4150 50  0001 C CNN
+F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-RC_Group_51_RoHS_L_11.pdf" H 4350 4150 50  0001 C CNN
+F 4 "RC2010JK-0710KL" H 4350 4150 50  0001 C CNN "part_number"
+F 5 "YAGEO" H 4350 4150 50  0001 C CNN "Manufacturer"
+F 6 "" H 4350 4150 50  0001 C CNN "Vendor"
+F 7 "RC2010JK-0710KL" H 4350 4150 50  0001 C CNN "Part"
+	1    4350 4150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4200 4000 4350 4000
+Connection ~ 4200 4000
+Wire Wire Line
+	4300 4300 4350 4300
+Wire Wire Line
+	4450 4300 4350 4300
+Connection ~ 4350 4300
+Wire Wire Line
+	2400 6400 2400 6250
+Wire Wire Line
+	2400 6250 2200 6250
+Wire Wire Line
+	2400 6400 2550 6400
+Connection ~ 2400 6400
+Wire Wire Line
+	2100 6400 1800 6400
 $EndSCHEMATC

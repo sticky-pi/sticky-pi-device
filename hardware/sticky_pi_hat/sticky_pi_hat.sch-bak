@@ -67,9 +67,9 @@ F 1 "TPS63002" H 7950 2376 50  0000 C CNN
 F 2 "Package_SON:Texas_DSC0010J_ThermalVias" H 8800 1250 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/tps63002.pdf" H 7650 2350 50  0001 C CNN
 F 4 "Texas Instruments" H 7950 1800 50  0001 C CNN "Manufacturer"
-F 5 "TPS63002DRCR" H 7950 1800 50  0001 C CNN "part_number"
+F 5 "TPS63002" H 7950 1800 50  0001 C CNN "part_number"
 F 6 "" H 7950 1800 50  0001 C CNN "Vendor"
-F 7 "TPS63002DRCR" H 7950 1800 50  0001 C CNN "Part"
+F 7 "TPS63002" H 7950 1800 50  0001 C CNN "Part"
 	1    7950 1800
 	1    0    0    -1  
 $EndComp
@@ -86,9 +86,9 @@ F 1 "TPL5110" H 4650 1750 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-6" H 4900 1350 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/tpl5110.pdf" H 4700 950 50  0001 C CNN
 F 4 "Texas Instruments" H 4900 1350 50  0001 C CNN "Manufacturer"
-F 5 "TPL5110QDDCTQ1" H 4900 1350 50  0001 C CNN "part_number"
+F 5 "TPL5110" H 4900 1350 50  0001 C CNN "part_number"
 F 6 "" H 4900 1350 50  0001 C CNN "Vendor"
-F 7 "TPL5110QDDCTQ1" H 4900 1350 50  0001 C CNN "Part"
+F 7 "TPL5110" H 4900 1350 50  0001 C CNN "Part"
 	1    4900 1350
 	1    0    0    -1  
 $EndComp
@@ -658,18 +658,7 @@ F 6 "SM4001PL" H 6150 5050 50  0001 C CNN "part_number"
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	5350 6300 5150 6300
-$Comp
-L power:Earth #PWR0123
-U 1 1 618E310E
-P 5150 6300
-F 0 "#PWR0123" H 5150 6050 50  0001 C CNN
-F 1 "Earth" H 5150 6150 50  0001 C CNN
-F 2 "" H 5150 6300 50  0001 C CNN
-F 3 "~" H 5150 6300 50  0001 C CNN
-	1    5150 6300
-	1    0    0    -1  
-$EndComp
+	5350 6300 5250 6300
 $Comp
 L power:+3.3V #PWR0124
 U 1 1 618F1751
@@ -687,8 +676,8 @@ Wire Wire Line
 	5350 7000 5100 7000
 Wire Wire Line
 	5100 7000 5100 6950
-Text GLabel 4850 6000 0    50   Input ~ 0
-drv
+Text GLabel 4950 6000 0    50   Input ~ 0
+batt_io
 $Comp
 L power:Earth #PWR0125
 U 1 1 619114BA
@@ -720,7 +709,7 @@ F 1 "DS1307Z+" V 8900 4050 50  0000 L CNN
 F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 9050 3800 50  0001 C CNN
 F 3 "https://datasheets.maximintegrated.com/en/ds/DS1307.pdf" H 9050 4100 50  0001 C CNN
 F 4 "Maxim Integrated" H 9050 4300 50  0001 C CNN "Manufacturer"
-F 5 "DS1307+" H 9050 4300 50  0001 C CNN "part_number"
+F 5 "DS1307Z+" H 9050 4300 50  0001 C CNN "part_number"
 F 6 "" H 9050 4300 50  0001 C CNN "Vendor"
 F 7 "DS1307Z+" H 9050 4300 50  0001 C CNN "Part"
 	1    9050 4300
@@ -756,7 +745,6 @@ F 21 "MCP3001-I_ST" H 5250 6200 50  0001 C CNN "part_number"
 	1    5250 6200
 	1    0    0    -1  
 $EndComp
-Connection ~ 5150 6300
 $Comp
 L Device:C C6
 U 1 1 619E8632
@@ -784,7 +772,7 @@ Wire Wire Line
 Connection ~ 3000 3700
 Connection ~ 3000 3800
 $Comp
-L Transistor_FET:Si2319CDS Q1
+L Transistor_FET:BSS123 Q1
 U 1 1 619D1B75
 P 4000 4100
 F 0 "Q1" V 3950 4200 50  0000 L CNN
@@ -847,7 +835,7 @@ Connection ~ 7350 2000
 Wire Wire Line
 	6800 1700 6550 1700
 Wire Wire Line
-	7350 1700 7200 1700
+	7350 1700 7250 1700
 Text GLabel 5400 1450 2    50   Input ~ 0
 GPIO_17_R
 Wire Wire Line
@@ -983,7 +971,7 @@ F 0 "J2" H 2800 7200 50  0000 C CNN
 F 1 "Conn_02x13_Odd_Even" H 2800 5800 50  0000 C CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_2x13_P2.54mm_Vertical" H 2750 6500 50  0001 C CNN
 F 3 "https://www.te.com/commerce/DocumentDelivery/DDEController?Action=srchrtrv&DocNm=215307&DocType=Customer+Drawing&DocLang=English" H 2750 6500 50  0001 C CNN
-F 4 "1-215307-0" H 2750 6500 50  0001 C CNN "part_number"
+F 4 "1-215307-3" H 2750 6500 50  0001 C CNN "part_number"
 F 5 "1-215307-3 " H 2750 6500 50  0001 C CNN "Part"
 F 6 "TE Connectivity AMP Connectors" H 2750 6500 50  0001 C CNN "Manufacturer"
 	1    2750 6500
@@ -1046,8 +1034,6 @@ F 3 "" H 6550 1600 50  0001 C CNN
 $EndComp
 Connection ~ 6550 1600
 Wire Wire Line
-	7050 2000 7000 2000
-Wire Wire Line
 	7550 1600 6750 1600
 $Comp
 L Transistor_FET:BSS84 Q2
@@ -1063,7 +1049,7 @@ F 6 "AO3415A" H 7000 1800 50  0001 C CNN "part_number"
 	1    7000 1800
 	0    1    -1   0   
 $EndComp
-Text GLabel 7050 2000 2    50   Input ~ 0
+Text GLabel 6850 2000 0    50   Input ~ 0
 drv
 Connection ~ 6750 1600
 Wire Wire Line
@@ -1159,7 +1145,7 @@ Wire Wire Line
 Text GLabel 5400 1350 2    50   Output ~ 0
 drv
 $Comp
-L Transistor_FET:Si2319CDS Q4
+L Transistor_FET:BSS123 Q4
 U 1 1 617890CF
 P 7250 5250
 F 0 "Q4" V 7100 5050 50  0000 L CNN
@@ -1177,7 +1163,7 @@ Wire Wire Line
 	6300 5050 6550 5050
 Connection ~ 6550 5050
 $Comp
-L Transistor_FET:Si2319CDS Q3
+L Transistor_FET:BSS123 Q3
 U 1 1 616A96A0
 P 6650 5250
 F 0 "Q3" H 6500 5050 50  0000 L CNN
@@ -1207,40 +1193,90 @@ Wire Wire Line
 $Comp
 L Device:R R9
 U 1 1 617E4831
-P 5000 6000
-F 0 "R9" V 4900 6050 50  0000 C CNN
-F 1 "49.9k" V 5000 6000 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 4930 6000 50  0001 C CNN
-F 3 "https://www.vishay.com/docs/28758/tnpw_e3.pdf" H 5000 6000 50  0001 C CNN
-F 4 "TNPW080549K9FHEA" H 5000 6000 50  0001 C CNN "part_number"
-F 5 "Vishay Dale" H 5000 6000 50  0001 C CNN "Manufacturer"
-F 6 "" H 5000 6000 50  0001 C CNN "Vendor"
-F 7 "TNPW080549K9FHEA" H 5000 6000 50  0001 C CNN "Part"
-	1    5000 6000
+P 5100 6000
+F 0 "R9" V 5000 6050 50  0000 C CNN
+F 1 "49.9k" V 5100 6000 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 5030 6000 50  0001 C CNN
+F 3 "https://www.vishay.com/docs/28758/tnpw_e3.pdf" H 5100 6000 50  0001 C CNN
+F 4 "TNPW080549K9FHEA" H 5100 6000 50  0001 C CNN "part_number"
+F 5 "Vishay Dale" H 5100 6000 50  0001 C CNN "Manufacturer"
+F 6 "" H 5100 6000 50  0001 C CNN "Vendor"
+F 7 "TNPW080549K9FHEA" H 5100 6000 50  0001 C CNN "Part"
+	1    5100 6000
 	0    -1   -1   0   
 $EndComp
-$Comp
-L Device:R R10
-U 1 1 617EEEAC
-P 5150 6150
-F 0 "R10" V 5250 6150 50  0000 C CNN
-F 1 "75k" V 5150 6150 50  0000 C CNN
-F 2 "Resistor_SMD:R_2010_5025Metric" V 5080 6150 50  0001 C CNN
-F 3 "https://www.koaspeer.com/pdfs/RK73H.pdf" H 5150 6150 50  0001 C CNN
-F 4 "RK73H2HTTE7502F" H 5150 6150 50  0001 C CNN "part_number"
-F 5 "KOA Speer Electronics, Inc." H 5150 6150 50  0001 C CNN "Manufacturer"
-F 6 "" H 5150 6150 50  0001 C CNN "Vendor"
-F 7 "RK73H2HTTE7502F" H 5150 6150 50  0001 C CNN "Part"
-	1    5150 6150
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	5150 6000 5350 6000
 Wire Wire Line
 	5350 6000 5350 6200
-Connection ~ 5150 6000
 Wire Notes Line
 	5450 5700 7850 5700
 Wire Notes Line
 	5450 4750 7850 4750
+$Comp
+L Device:CP1 C7
+U 1 1 618224EA
+P 4150 1500
+F 0 "C7" H 3950 1600 50  0000 L CNN
+F 1 "47uF" H 3950 1400 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_5x5.3" H 4150 1500 50  0001 C CNN
+F 3 "https://www.we-online.de/katalog/datasheet/865080242004.pdf" H 4150 1500 50  0001 C CNN
+F 4 "865080242004" H 4150 1500 50  0001 C CNN "part_number"
+F 5 "Würth Elektronik" H 4150 1500 50  0001 C CNN "Manufacturer"
+F 6 "" H 4150 1500 50  0001 C CNN "Vendor"
+F 7 "865080242004" H 4150 1500 50  0001 C CNN "Part"
+	1    4150 1500
+	1    0    0    -1  
+$EndComp
+Connection ~ 4150 1350
+$Comp
+L power:Earth #PWR0130
+U 1 1 6182505F
+P 4150 1650
+F 0 "#PWR0130" H 4150 1400 50  0001 C CNN
+F 1 "Earth" H 4150 1500 50  0001 C CNN
+F 2 "" H 4150 1650 50  0001 C CNN
+F 3 "~" H 4150 1650 50  0001 C CNN
+	1    4150 1650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7000 2000 6850 2000
+Text GLabel 7050 2300 0    50   Output ~ 0
+batt_io
+Wire Wire Line
+	7250 1700 7250 2300
+Wire Wire Line
+	7250 2300 7050 2300
+Connection ~ 7250 1700
+Wire Wire Line
+	7250 1700 7200 1700
+$Comp
+L Device:R R10
+U 1 1 617EEEAC
+P 5250 6150
+F 0 "R10" V 5350 6150 50  0000 C CNN
+F 1 "75k" V 5250 6150 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 5180 6150 50  0001 C CNN
+F 3 "https://www.koaspeer.com/pdfs/RK73H.pdf" H 5250 6150 50  0001 C CNN
+F 4 "RK73H2HTTE7502F" H 5250 6150 50  0001 C CNN "part_number"
+F 5 "KOA Speer Electronics, Inc." H 5250 6150 50  0001 C CNN "Manufacturer"
+F 6 "" H 5250 6150 50  0001 C CNN "Vendor"
+F 7 "RK73H2HTTE7502F" H 5250 6150 50  0001 C CNN "Part"
+	1    5250 6150
+	1    0    0    -1  
+$EndComp
+Connection ~ 5250 6000
+Wire Wire Line
+	5250 6000 5350 6000
+Connection ~ 5250 6300
+$Comp
+L power:Earth #PWR0123
+U 1 1 618E310E
+P 5250 6300
+F 0 "#PWR0123" H 5250 6050 50  0001 C CNN
+F 1 "Earth" H 5250 6150 50  0001 C CNN
+F 2 "" H 5250 6300 50  0001 C CNN
+F 3 "~" H 5250 6300 50  0001 C CNN
+	1    5250 6300
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

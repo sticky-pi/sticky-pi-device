@@ -19,28 +19,27 @@ export $(grep -v '^#' /etc/environment | xargs -d '\r\n')
 # todo, here turn watchdog on ?
 
 LOG_FILE=${SPI_IMAGE_DIR}/${SPI_LOG_FILENAME}
-FIRST_BOOT_LOG_FILE=${SPI_IMAGE_DIR}/${SPI_FIRST_BOOT_LOG_FILENAME}
 
-## turn on wifi interface
-# ip link set wlan0 up
-## in the background, initiate wpa_supplicant. We are not waiting for success
-# wpa_supplicant -Dnl80211 -iwlan0 -c/etc/wpa_supplicant/wpa_supplicant.conf &
-## we will requests a dynamic IP from the router. also not waiting (-nw)
-# dhclient wlan0 -nw
 
-# test if our logfile exists if not, it means we have not gone through the first boot
-# during first boot, we log output on FIRST_BOOT_LOG_FILE
-
+# If logfile does not exist, we launch the first boot!
+# To run a  new first boot, we can also delete this file
 if [ ! -f "${LOG_FILE}" ]; then
     set -e
     echo "${LOG_FILE} does NOT exist. Performing first boot."
     sh /opt/sticky_pi/utils/first_boot.sh &&
     touch ${LOG_FILE} && sync &&
+    # this restarts the system, at low level
     echo b > /proc/sysrq-trigger
-
 else
+  # we rotate the log file when it is to large
+
+  if [[ $(wc -l <${LOG_FILE}) -ge 1000 ]]; then
+    sed -i '1,500d' ${LOG_FILE}
+    echo "Rotating log file" | tee -a ${LOG_FILE}
+  fi
+
   # our custom c program
-  take_picture > ${LOG_FILE}
+  take_picture | tee -a  ${LOG_FILE}
 fi
 bash
 #

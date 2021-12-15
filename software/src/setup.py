@@ -14,6 +14,7 @@ setup(
     install_requires=['rpi_ws281x',
                       'pytz',
                       'netifaces',
-                      'requests'
+                      'requests',
+                      'ujson'
     ]
 )

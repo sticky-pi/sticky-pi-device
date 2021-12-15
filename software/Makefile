@@ -39,8 +39,8 @@ ${DT_BLOB}: utils/dt-blob.dts
 ${PYTHON_PACKAGE}: ${PYTHON_RESOURCES} .env
 	@echo "# Do not modify manually. Built automatically from ../../.env" > src/sticky_pi_device/_version.py
 	@echo "__version__ = '${SPI_VERSION}'" >> src/sticky_pi_device/_version.py
-	@cd src && rm -r dist && python setup.py sdist
-	@mkdir  ./os_stub/tmp/ -p # fixme, should be dynamically defined
+	@cd src && rm -rf dist && python setup.py sdist
+	@mkdir  ./os_stub/opt/sticky_pi -p # fixme, should be dynamically defined
 	@cp src/dist/*.tar.gz $@ -v
 	@echo Made $@
 

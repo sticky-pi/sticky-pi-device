@@ -976,10 +976,10 @@ static void read_dht_and_sleep(RASPISTILL_STATE * state){
     if (time_to_sleep > CAMERA_SETTLE_TIME){
         time_to_sleep = CAMERA_SETTLE_TIME;
         }
-    if (status == 0){
-        logging("T, H = %02f, %02f\n", dht_data.temp, dht_data.hum);
-        }
-    else{
+//    if (status == 0){
+//        logging("T, H = %02f, %02f", dht_data.temp, dht_data.hum);
+//        }
+    if(status != 0){
         logging_error("Failed to read DHT");
     }
     if(time_to_sleep >0){
@@ -1043,45 +1043,43 @@ int must_try_to_sync() {
 
 void read_battery_level(RASPISTILL_STATE *state){
 // translated from https://stackoverflow.com/questions/24378430/reading-data-out-of-an-adc-mcp3001-with-python-spi works
-    int gpio_11 = GPIO_TO_WIRING_PI_MAP[11];
-    int gpio_8 = GPIO_TO_WIRING_PI_MAP[8];
+    int gpio_11 = GPIO_TO_WIRING_PI_MAP[11]; //clk
+    int gpio_8 = GPIO_TO_WIRING_PI_MAP[8]; //C0
     int gpio_9 = GPIO_TO_WIRING_PI_MAP[9];
-    int gpio_6 = GPIO_TO_WIRING_PI_MAP[6];
-
-//    GPIO.setup(11, GPIO.OUT)
-    pinMode(gpio_11, OUTPUT);
-
-//    GPIO.setup(8, GPIO.OUT)
-    pinMode(gpio_8, OUTPUT);
-
-//    GPIO.setup(9, GPIO.IN)
-    pinMode(gpio_9, INPUT);
-
-//    GPIO.output(11, False)  # CLK low
-    digitalWrite(gpio_11,LOW);
-
-//    GPIO.output(6, False)   # /CS low
-    digitalWrite(gpio_6,LOW);
-
-    int adcvalue = 0;
+    float sum = 0;
+    int adcvalue;
+    int j;
     int i;
     int input_val;
-    for(i=0; i != 13; ++i){
-//        GPIO.output(11, True)
-        digitalWrite(gpio_11,HIGH);
-//        GPIO.output(11, False)
-        digitalWrite(gpio_11,LOW);
-        adcvalue <<= 1;
-        input_val = digitalRead(gpio_9);
-//        if(GPIO.input(9)):
-        if(input_val){
-            adcvalue |= 0x001;
+    int oversampling = 8;
+
+    pinMode(gpio_11, OUTPUT);
+    pinMode(gpio_8, OUTPUT);
+    pinMode(gpio_9, INPUT);
+
+    digitalWrite(gpio_8, HIGH); // CS high
+    for(j=0; j != oversampling; ++j){
+        adcvalue = 0;
+        digitalWrite(gpio_11, LOW); // CLK low
+        digitalWrite(gpio_8, LOW); //CS low
+        for(i=0; i != 2; ++i){
+            digitalWrite(gpio_11,HIGH);
+            digitalWrite(gpio_11,LOW);
+            sleep(0.01);
         }
-    }
-//            adcvalue |= 0x001
-    digitalWrite(gpio_6, HIGH);
-    adcvalue &= 0x3ff;
-    state->bat = (int) (100.0 * ((float) adcvalue / 1024.0));
+        for(i=0; i != 10; ++i){
+            digitalWrite(gpio_11,HIGH);
+            digitalWrite(gpio_11,LOW);
+            adcvalue <<= 1;
+            input_val = digitalRead(gpio_9);
+            if(input_val){
+                adcvalue |= 0x1;
+            }
+            digitalWrite(gpio_8, HIGH); // CS high
+        }
+        sum += adcvalue;
+       }
+    state->bat = (int) ((100.0 * sum) / (oversampling * 1024.0));
 
 }
 
@@ -1099,9 +1097,7 @@ void calc_lum(RASPISTILL_STATE *state, MMAL_COMPONENT_T *camera)
         logging_error("Issue reading camera settings");
         return;
    }
-//   logging("%f,  %f,", settings.analog_gain, settings.digital_gain);
    state->lum = log10(1e6 / settings.exposure);
-
 }
 
 
@@ -1127,6 +1123,8 @@ int main(int argc, const char **argv)
     else if (is_test_gpio_up()){
         logging("Testing bridge is on, entering testing mode");
         system("test_routine.py");
+        logging("Testing done. staying alive");
+        return EX_OK;
     }
 
     int was_turned_on_by_button = is_manual_on_gpio_up();
@@ -1242,7 +1240,6 @@ int main(int argc, const char **argv)
 
         int i=0;
         MMAL_PARAMETER_CAMERA_SETTINGS_T settings;
-
 
         // we wait for camera to warmup. meanwhile, we read DHT
 

@@ -17,8 +17,10 @@ pip install wheel --no-cache-dir
 pip install requests --no-cache-dir
 #pip install faster_than_requests --no-cache-dir
 pip install gpiozero --no-cache-dir
+export CFLAGS=-fcommon; pip install RPi.GPIO --no-cache-dir
 pip install Adafruit_DHT --install-option="${ADAFRUIT_DHT_OPTION}" --no-cache-dir
-export READTHEDOCS=True; pip install picamera  --no-cache-dir # hack to circumvent virtual pi issue
+# hack to circumvent virtual pi issue (when building on emulated platform)
+export READTHEDOCS=True; pip install picamera  --no-cache-dir
 
 pip install /opt/sticky_pi/sticky_pi_device.tar.gz --no-cache-dir
 

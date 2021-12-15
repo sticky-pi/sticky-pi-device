@@ -100,16 +100,17 @@ BLINKER=$!
 
 if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   echo "Making read-only FS"
-  (mount ${SD}p1 /boot
-  cp /boot/cmdline.txt /boot/cmdline.txt-backup
-  sed s/rw/ro/g /boot/cmdline.txt-backup > /boot/cmdline.txt
-
+  (
   cp /etc/fstab /etc/fstab-backup
   cat /etc/fstab-backup > /etc/fstab
   echo 'tmpfs   /var/log    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'tmpfs   /var/tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'tmpfs   /tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'resolv_conf="/tmp/resolv.conf"' > /etc/resolvconf.conf
+
+  mount ${SD}p1 /boot
+  cp /boot/cmdline.txt /boot/cmdline.txt-backup
+  sed s/rw/ro/g /boot/cmdline.txt-backup > /boot/cmdline.txt
   history -c -w) ||
   umount ${SD}p1
 fi

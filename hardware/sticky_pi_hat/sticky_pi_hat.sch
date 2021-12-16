@@ -302,35 +302,21 @@ F 3 "~" H 9800 4300 50  0001 C CNN
 	1    9800 4300
 	1    0    0    -1  
 $EndComp
-$Comp
-L Device:LED D2
-U 1 1 6145E678
-P 2250 3400
-F 0 "D2" H 2243 3145 50  0000 C CNN
-F 1 "LED" H 2243 3236 50  0000 C CNN
-F 2 "#none" H 2250 3400 50  0001 C CNN
-F 3 "https://www.kingbrightusa.com/images/catalog/SPEC/WP7113SECK-J3.pdf" H 2250 3400 50  0001 C CNN
-F 4 "WP7113SECK/J3" H 2250 3400 50  0001 C CNN "part_number"
-F 5 "#none" H 2250 3400 50  0001 C CNN "Manufacturer"
-F 6 "WP7113SECK/J3" H 2250 3400 50  0001 C CNN "Part"
-	1    2250 3400
-	-1   0    0    1   
-$EndComp
 Wire Wire Line
 	3000 3400 2400 3400
 $Comp
 L Device:R R2
 U 1 1 6146BE2F
-P 3550 3500
-F 0 "R2" V 3600 3650 50  0000 C CNN
-F 1 "560Ω" V 3550 3500 50  0000 C CNN
-F 2 "Resistor_SMD:R_2010_5025Metric" V 3480 3500 50  0001 C CNN
-F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-AC_51_RoHS_L_7.pdf" H 3550 3500 50  0001 C CNN
-F 4 "AC2010JK-07560RL" H 3550 3500 50  0001 C CNN "part_number"
-F 5 "YAGEO" H 3550 3500 50  0001 C CNN "Manufacturer"
-F 6 "" H 3550 3500 50  0001 C CNN "Vendor"
-F 7 "AC2010JK-07560RL" H 3550 3500 50  0001 C CNN "Part"
-	1    3550 3500
+P 3550 3400
+F 0 "R2" V 3600 3550 50  0000 C CNN
+F 1 "560Ω" V 3550 3400 50  0000 C CNN
+F 2 "Resistor_SMD:R_2010_5025Metric" V 3480 3400 50  0001 C CNN
+F 3 "https://www.yageo.com/upload/media/product/productsearch/datasheet/rchip/PYu-AC_51_RoHS_L_7.pdf" H 3550 3400 50  0001 C CNN
+F 4 "AC2010JK-07560RL" H 3550 3400 50  0001 C CNN "part_number"
+F 5 "YAGEO" H 3550 3400 50  0001 C CNN "Manufacturer"
+F 6 "" H 3550 3400 50  0001 C CNN "Vendor"
+F 7 "AC2010JK-07560RL" H 3550 3400 50  0001 C CNN "Part"
+	1    3550 3400
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
@@ -512,25 +498,14 @@ $EndComp
 Wire Wire Line
 	8200 4400 8300 4400
 $Comp
-L power:+5V #PWR0116
-U 1 1 613E357C
-P 4150 3900
-F 0 "#PWR0116" H 4150 3750 50  0001 C CNN
-F 1 "+5V" H 4165 4073 50  0000 C CNN
-F 2 "" H 4150 3900 50  0001 C CNN
-F 3 "" H 4150 3900 50  0001 C CNN
-	1    4150 3900
-	1    0    0    -1  
-$EndComp
-$Comp
 L power:+5V #PWR0118
 U 1 1 613FA3A6
-P 3700 3500
-F 0 "#PWR0118" H 3700 3350 50  0001 C CNN
-F 1 "+5V" H 3800 3550 50  0000 C CNN
-F 2 "" H 3700 3500 50  0001 C CNN
-F 3 "" H 3700 3500 50  0001 C CNN
-	1    3700 3500
+P 4150 3400
+F 0 "#PWR0118" H 4150 3250 50  0001 C CNN
+F 1 "+5V" H 4250 3450 50  0000 C CNN
+F 2 "" H 4150 3400 50  0001 C CNN
+F 3 "" H 4150 3400 50  0001 C CNN
+	1    4150 3400
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -607,9 +582,6 @@ F 7 "CM316X5R106K10AT" H 6900 1450 50  0001 C CNN "Part"
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	3400 3500 3000 3500
-Connection ~ 3000 3500
-Wire Wire Line
 	6300 5450 6300 5350
 $Comp
 L power:Earth #PWR0121
@@ -625,19 +597,14 @@ $EndComp
 $Comp
 L power:Earth #PWR0122
 U 1 1 617550CA
-P 4050 3450
-F 0 "#PWR0122" H 4050 3200 50  0001 C CNN
-F 1 "Earth" H 4050 3300 50  0001 C CNN
-F 2 "" H 4050 3450 50  0001 C CNN
-F 3 "~" H 4050 3450 50  0001 C CNN
-	1    4050 3450
+P 3950 3700
+F 0 "#PWR0122" H 3950 3450 50  0001 C CNN
+F 1 "Earth" H 3950 3550 50  0001 C CNN
+F 2 "" H 3950 3700 50  0001 C CNN
+F 3 "~" H 3950 3700 50  0001 C CNN
+	1    3950 3700
 	1    0    0    -1  
 $EndComp
-Connection ~ 3000 3400
-Wire Wire Line
-	3000 3400 3950 3400
-Wire Wire Line
-	4050 3450 4050 3400
 Connection ~ 4900 1900
 Wire Wire Line
 	4900 1900 5050 1900
@@ -770,7 +737,6 @@ GPIO_27
 Wire Wire Line
 	3000 3700 3450 3700
 Connection ~ 3000 3700
-Connection ~ 3000 3800
 $Comp
 L Transistor_FET:BSS123 Q1
 U 1 1 619D1B75
@@ -838,18 +804,6 @@ Wire Wire Line
 	7350 1700 7250 1700
 Text GLabel 5400 1450 2    50   Input ~ 0
 GPIO_17_R
-Wire Wire Line
-	3700 3500 3700 3600
-Connection ~ 3700 3500
-Wire Wire Line
-	3700 3600 3000 3600
-Wire Wire Line
-	3950 3800 3950 3400
-Wire Wire Line
-	3000 3800 3950 3800
-Connection ~ 3950 3400
-Wire Wire Line
-	3950 3400 4050 3400
 $Comp
 L Device:R R6
 U 1 1 61707D76
@@ -1092,7 +1046,7 @@ Text Notes 1750 5750 0    50   ~ 0
 Raspberry Pi Pins\n
 Text Notes 4600 5950 0    50   ~ 0
 Battery Level ADC Reader
-Text GLabel 4300 1900 0    50   Input ~ 0
+Text GLabel 4000 1900 0    50   Input ~ 0
 push_button
 $Comp
 L power:+BATT #PWR0129
@@ -1115,12 +1069,6 @@ Wire Notes Line
 	7850 4750 7850 5700
 Wire Notes Line
 	5950 700  5950 2100
-Wire Notes Line
-	5950 2100 3750 2100
-Wire Notes Line
-	3750 2100 3750 700 
-Wire Notes Line
-	3750 700  5950 700 
 Text Notes 5500 4850 0    50   ~ 0
 Button State Holder
 Text Notes 3800 800  0    50   ~ 0
@@ -1335,4 +1283,77 @@ Wire Wire Line
 Connection ~ 2400 6400
 Wire Wire Line
 	2100 6400 1800 6400
+$Comp
+L Device:LED D2
+U 1 1 6145E678
+P 2250 3400
+F 0 "D2" H 2243 3145 50  0000 C CNN
+F 1 "LED" H 2400 3350 50  0000 C CNN
+F 2 "#none" H 2250 3400 50  0001 C CNN
+F 3 "https://www.kingbrightusa.com/images/catalog/SPEC/WP7113SECK-J3.pdf" H 2250 3400 50  0001 C CNN
+F 4 "WP7113SECK/J3" H 2250 3400 50  0001 C CNN "part_number"
+F 5 "#none" H 2250 3400 50  0001 C CNN "Manufacturer"
+F 6 "WP7113SECK/J3" H 2250 3400 50  0001 C CNN "Part"
+	1    2250 3400
+	1    0    0    1   
+$EndComp
+Wire Wire Line
+	3000 3400 3400 3400
+Connection ~ 3000 3400
+Wire Wire Line
+	3700 3400 4150 3400
+Connection ~ 4150 3400
+Wire Wire Line
+	4150 3900 4150 3600
+Connection ~ 4150 3600
+Wire Wire Line
+	4150 3600 4150 3400
+Wire Wire Line
+	3000 3600 4150 3600
+$Comp
+L power:Earth #PWR0116
+U 1 1 61C1218D
+P 3950 3450
+F 0 "#PWR0116" H 3950 3200 50  0001 C CNN
+F 1 "Earth" H 3950 3300 50  0001 C CNN
+F 2 "" H 3950 3450 50  0001 C CNN
+F 3 "~" H 3950 3450 50  0001 C CNN
+	1    3950 3450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3000 3500 3750 3500
+Wire Wire Line
+	3750 3500 3750 3450
+Wire Wire Line
+	3750 3450 3950 3450
+Connection ~ 3000 3500
+Wire Wire Line
+	3000 3800 3850 3800
+Wire Wire Line
+	3850 3800 3850 3700
+Wire Wire Line
+	3850 3700 3950 3700
+Connection ~ 3000 3800
+$Comp
+L Diode:SM4001 D4
+U 1 1 61D22407
+P 4150 1900
+F 0 "D4" H 4250 2000 50  0000 C CNN
+F 1 "SM4001PL" H 4000 2050 50  0000 C CNN
+F 2 "Diode_SMD:D_SOD-123F" H 4150 1725 50  0001 C CNN
+F 3 "http://cdn-reichelt.de/documents/datenblatt/A400/SMD1N400%23DIO.pdf" H 4150 1900 50  0001 C CNN
+F 4 "Micro Commercial Co" H 4150 1900 50  0001 C CNN "Manufacturer"
+F 5 "SM4001PL" H 4150 1900 50  0001 C CNN "Part"
+F 6 "SM4001PL" H 4150 1900 50  0001 C CNN "part_number"
+	1    4150 1900
+	-1   0    0    1   
+$EndComp
+Connection ~ 4300 1900
+Wire Notes Line
+	3400 2100 3400 700 
+Wire Notes Line
+	3400 700  5950 700 
+Wire Notes Line
+	3400 2100 5950 2100
 $EndSCHEMATC

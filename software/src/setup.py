@@ -15,6 +15,12 @@ setup(
                       'pytz',
                       'netifaces',
                       'requests',
-                      'ujson'
+                      'ujson',
+                      'dbus-python',
+                      'uvicorn',
+                      'fastapi',
+                      'pydantic',
+                      "zeroconf"
+                    # 'gobject'  #fixme
     ]
 )

@@ -4,6 +4,7 @@ mount -t proc proc /proc
 mount -a
 modprobe brcmfmac
 modprobe brcmutil
+# fixme possibly we need some of these just for transfer -> can be lazy-loaded
 modprobe ip_tables
 modprobe x_tables
 modprobe cfg80211
@@ -15,8 +16,6 @@ modprobe rtc-ds1307
 
 export $(grep -v '^#' /etc/environment | xargs -d '\r\n')
 
-
-# todo, here turn watchdog on ?
 
 LOG_FILE=${SPI_IMAGE_DIR}/${SPI_LOG_FILENAME}
 

@@ -21,9 +21,10 @@ blink(){
 }
 
 # turn on wifi interface
+rfkill unblock all
 ip link set wlan0 up
 # in the background, initiate wpa_supplicant. We are not waiting for success
-wpa_supplicant -Dnl80211 -iwlan0 -c/etc/wpa_supplicant/wpa_supplicant.conf &
+wpa_supplicant -Dnl80211 -iwlan0 -c/etc/wpa_supplicant/wpa_supplicant.conf -B
 # we will requests a dynamic IP from the router. also not waiting (-nw)
 dhclient wlan0 -nw
 
@@ -37,7 +38,7 @@ grep 'Model.*Raspberry Pi' /proc/cpuinfo -c || (
   )
 
 echo "Making partition?"
-(lsblk | grep $(basename ${SD})p3  -c) ||
+(lsblk | grep $(basename ${SD})p4  -c) ||
 (
 echo "Making new partition"
 fdisk $SD << EOF
@@ -53,9 +54,9 @@ w
 EOF
 
 partprobe $SD
-mkfs.vfat ${SD}p3
+mkfs.vfat ${SD}p4
 sync
-fatlabel  ${SD}p3 ${SPI_DRIVE_LABEL}
+fatlabel  ${SD}p4 ${SPI_DRIVE_LABEL}
 sync
 echo "New partition labelled"
 )
@@ -103,10 +104,16 @@ if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   (
   cp /etc/fstab /etc/fstab-backup
   cat /etc/fstab-backup > /etc/fstab
+
+
   echo 'tmpfs   /var/log    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'tmpfs   /var/tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'tmpfs   /tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'resolv_conf="/tmp/resolv.conf"' > /etc/resolvconf.conf
+#  # to save bluetooth pairing in RW partition
+#  mkdir /var/lib/ -p
+#  mkdir ${SPI_IMAGE_DIR}/bluetooth
+#  ln -s ${SPI_IMAGE_DIR}/bluetooth /var/lib/bluetooth
 
   mount ${SD}p1 /boot
   cp /boot/cmdline.txt /boot/cmdline.txt-backup

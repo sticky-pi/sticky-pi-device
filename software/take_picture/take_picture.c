@@ -218,6 +218,13 @@ static void default_status(RASPISTILL_STATE *state, struct tm *timeinfo)
 
 
    raspicamcontrol_set_defaults(&state->camera_parameters);
+
+
+   state->camera_parameters.roi.x = atoi(SPI_ZOOM_X);
+   state->camera_parameters.roi.y = atoi(SPI_ZOOM_Y);
+   state->camera_parameters.roi.w = atoi(SPI_ZOOM_W);
+   state->camera_parameters.roi.h = atoi(SPI_ZOOM_H);
+
 }
 
 /**

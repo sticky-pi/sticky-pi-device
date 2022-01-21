@@ -8,7 +8,12 @@ fixup_file=fixup_x.dat
 
 
 # Disable bluetooth
-dtoverlay=pi3-disable-bt
+# dtoverlay=pi3-disable-bt
+
+# Enable Bluetooth
+dtparam=krnbt=on
+
+
 dtparam=audio=off
 
 #SPI device: ADC battery level reader

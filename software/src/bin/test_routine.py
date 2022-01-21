@@ -47,10 +47,9 @@ def test_turn_off():
     GPIO.output(SPI_OFF_GPIO, 1)
 
 
-
 def test_dht():
     logging.info("Reading DHT")
-    sensor=os.environ["SPI_DHT"]
+    sensor = os.environ["SPI_DHT"]
     pin = int(os.environ["SPI_DHT_GPIO"])
     supported_sensors = {'dht11': Adafruit_DHT.DHT11, 'dht22': Adafruit_DHT.DHT22}
     assert sensor in supported_sensors, "Unsupported sensor name: %s" % sensor
@@ -65,6 +64,7 @@ def test_dht():
 
     logging.info("DHT reads      : " + str(out))
 
+
 def test_batt():
     logging.info("Reading battery through MCP3001")
     CLK = 11
@@ -75,8 +75,8 @@ def test_batt():
     GPIO.setup(MISO, GPIO.IN)
 
     GPIO.output(CLK, False)  # CLK low
-    GPIO.output(CS, True)   # /CS high
-    GPIO.output(CS, False)   # /CS low
+    GPIO.output(CS, True)  # /CS high
+    GPIO.output(CS, False)  # /CS low
 
     lout = []
     for i in range(2):
@@ -117,12 +117,9 @@ if __name__ == '__main__':
 
     GPIO.setmode(GPIO.BCM)
 
-
     logger = logging.getLogger()
 
     logger.setLevel(logging.INFO)
-
-
 
     logging.info("------------- TESTING INFO -------------")
     logging.info("Device ID: " + device_id())
@@ -170,6 +167,11 @@ if __name__ == '__main__':
         time.sleep(2.0)
         camera.framerate = 10
         camera.resolution = (int(os.environ["SPI_IM_W"]), int(os.environ["SPI_IM_H"]))
+
+        camera.zoom = (int(os.environ["SPI_ZOOM_X"]),
+                       int(os.environ["SPI_ZOOM_Y"]),
+                       int(os.environ["SPI_ZOOM_W"]),
+                       int(os.environ["SPI_ZOOM_H"]))
         camera.flash_mode = 'off'
         try:
             SPI_FLASH_GPIO = int(os.environ["SPI_FLASH_GPIO"])
@@ -178,12 +180,12 @@ if __name__ == '__main__':
             SPI_TESTING_GPIO = int(os.environ["SPI_TESTING_GPIO"])
             GPIO.setup(SPI_TESTING_GPIO, GPIO.IN)  # set a port/pin as an output
             GPIO.output(SPI_FLASH_GPIO, 1)
-            while GPIO.input(SPI_TESTING_GPIO,):
+            while GPIO.input(SPI_TESTING_GPIO, ):
                 camera.start_preview()
                 time.sleep(2)
                 camera.stop_preview()
                 et = camera.exposure_speed / 1000
-                logging.info(f"Set focus and adjust aperture until exposure time is ~{SPI_REF_EXPOSURE_TIME/1000} ms")
+                logging.info(f"Set focus and adjust aperture until exposure time is ~{SPI_REF_EXPOSURE_TIME / 1000} ms")
                 logging.info(f"Exposure time: {et} ms")
                 time.sleep(1)
 

@@ -1,6 +1,6 @@
 #!/bin/python
 from optparse import OptionParser
-from sticky_pi_device.data_syncer import DataSyncer
+# from sticky_pi_device.data_syncer import DataSyncer
 import logging
 
 if __name__ == '__main__':
@@ -37,5 +37,5 @@ if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
 
-    ds = DataSyncer(**option_dict)
-    ds.sync()
+    # ds = DataSyncer(**option_dict)
+    # ds.sync()

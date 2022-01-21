@@ -8,14 +8,13 @@ pacman-key --init
 pacman-key --populate
 pacman -Syy
 pacman -Syu --noconfirm
-pacman -S python-pip rng-tools dosfstools devtools libjpeg uboot-tools base-devel parted dhclient git cmake   --needed --noconfirm
-pacman -S wiringpi   --needed --noconfirm
+pacman -S python-pip python-requests python-wheel rng-tools dosfstools devtools libjpeg uboot-tools base-devel parted dhclient git cmake   --needed --noconfirm
+pacman -S wiringpi  gobject-introspection bluez bluez-utils dbus-python python-gobject --needed --noconfirm
+pacman -S uvicorn python-fastapi python-pydantic python-aiofiles  --needed --noconfirm
 pacman -Scc --noconfirm
 
 pip install --upgrade pip --no-cache-dir
-pip install wheel --no-cache-dir
-pip install requests --no-cache-dir
-#pip install faster_than_requests --no-cache-dir
+pip install zeroconf --no-cache-dir
 pip install gpiozero --no-cache-dir
 export CFLAGS=-fcommon; pip install RPi.GPIO --no-cache-dir
 pip install Adafruit_DHT --install-option="${ADAFRUIT_DHT_OPTION}" --no-cache-dir

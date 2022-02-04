@@ -1,33 +1,41 @@
-### Module positions - created on Sat Oct 23 19:53:09 2021 ###
-### Printed by Pcbnew version kicad 5.1.10
+### Module positions - created on Fri 07 Jan 2022 13:14:29 EET ###
+### Printed by Pcbnew version 6.0.0
 ## Unit = mm, Angle = deg.
 ## Side : All
-# Ref     Val                Package                                                PosX       PosY       Rot  Side
-BT2       Battery_Cell       BatteryHolder_Keystone_3000_1x12mm                  46.5280    -2.1560   90.0000  top
-C1        10μF              C_1206_3216Metric                                   18.8420   -12.5700  270.0000  top
-C2        0.1μF             C_1206_3216Metric                                   22.4750   -18.5000  180.0000  top
-C3        10μF              C_1206_3216Metric                                   26.5000   -12.4750  270.0000  top
-C4        10μF              C_1206_3216Metric                                   29.5100   -12.5700  270.0000  top
-C5        100nF              CP_Elec_4x4.5                                       51.3540   -21.9680    0.0000  top
-C6        10μF              C_1206_3216Metric                                   28.3416   -20.0884  180.0000  top
-D3        SM4001PL           D_SOD-123F                                           6.4468   -19.3264   90.0000  top
-L1        2.2μH             L_Abracon_ASPI-3012S                                22.1440    -8.7600  180.0000  top
-Q1        BSS806NH6327XTSA1  SOT-23                                              32.0500    12.0680    0.0000  top
-Q2        AO3415A            SOT-23                                              15.7940   -14.0940    0.0000  top
-Q3        BSS806NH6327XTSA1  SOT-23                                              11.1204   -17.9548    0.0000  top
-Q4        BSS806NH6327XTSA1  SOT-23                                              26.5452    -8.3970  270.0000  top
-R1        75k                R_2010_5025Metric                                    2.3320   -14.6020   90.0000  top
-R2        560Ω              R_2010_5025Metric                                   37.3840   -10.2840  180.0000  top
-R3        100Ω              R_2010_5025Metric                                   16.8100   -18.4120  180.0000  top
-R4        2.2k               R_2010_5025Metric                                   12.2380   -11.5540   90.0000  top
-R5        10k                R_2010_5025Metric                                   36.1648   -20.2916    0.0000  top
-R6        10k                R_2010_5025Metric                                   44.1404   -20.4948    0.0000  top
-R7        10k                R_2010_5025Metric                                   38.4000     9.7820  270.0000  top
-R8        5.5Ω              R_2010_5025Metric                                   31.5155     7.2420    0.0000  top
-R9        49.9k              R_0805_2012Metric                                   23.6827    -4.6970  180.0000  top
-R10       75k                R_2010_5025Metric                                   18.3952    -6.8845  270.0000  top
-U2        TPL5110            SOT-23-6                                             7.9200   -13.0780    0.0000  top
-U3        TPS63002           Texas_DSC0010J_ThermalVias                          22.1440   -12.8240  270.0000  top
-U4        DS1307Z+           SOIC-8_3.9x4.9mm_P1.27mm                            52.3700   -15.1100  180.0000  top
-Y1        Crystal            Crystal_SMD_MicroCrystal_CM9V-T1A-2Pin_1.6x1.0mm    57.1960   -16.3800   90.0000  top
+# Ref     Val                  Package                                                PosX       PosY       Rot  Side
+G***      LOGO                 logo-doc                                           -46.9952    -4.9970   90.0000  bottom
+J2        Conn_02x13_Odd_Even  PinSocket_2x13_P2.54mm_Vertical                     -4.8700    -1.2500  -90.0000  bottom
+BT2       Battery_Cell         BatteryHolder_Keystone_3000_1x12mm                  46.5280    -2.1560   90.0000  top
+C1        10μF                C_1206_3216Metric                                   18.8420   -12.5700  -90.0000  top
+C2        0.1μF               C_1206_3216Metric                                   22.4750   -18.5000  180.0000  top
+C3        10μF                C_1206_3216Metric                                   26.5000   -12.4750  -90.0000  top
+C4        10μF                C_1206_3216Metric                                   29.5100   -12.5700  -90.0000  top
+C5        100nF                CP_Elec_4x4.5                                       51.3540   -21.9680    0.0000  top
+C6        10μF                C_1206_3216Metric                                   28.3416   -20.0884  180.0000  top
+C7        47uF                 CP_Elec_5x5.3                                        1.8552   -11.1370  180.0000  top
+D3        SM4001PL             D_SOD-123F                                           7.8652   -19.2170   90.0000  top
+D4        SM4001PL             D_SOD-123F                                           5.1552   -19.2370   90.0000  top
+G***      LOGO                 logo                                                54.8592    11.7886    0.0000  top
+L1        2.2μH               L_Abracon_ASPI-3012S                                22.1440    -8.7600  180.0000  top
+Q1        BSS806NH6327XTSA1    SOT-23                                              32.0500    12.0680    0.0000  top
+Q2        AO3415A              SOT-23                                              15.7940   -14.0940    0.0000  top
+Q3        BSS806NH6327XTSA1    SOT-23                                              11.1204   -17.9548    0.0000  top
+Q4        BSS806NH6327XTSA1    SOT-23                                              26.5452    -8.3970  -90.0000  top
+R1        75k                  R_2010_5025Metric                                    0.5052   -16.9170  180.0000  top
+R2        560Ω                R_2010_5025Metric                                   37.3840   -10.2840  180.0000  top
+R3        100Ω                R_2010_5025Metric                                   16.8100   -18.4120  180.0000  top
+R4        2.2k                 R_2010_5025Metric                                   12.2380   -11.5540   90.0000  top
+R5        10k                  R_2010_5025Metric                                   36.1648   -20.2916    0.0000  top
+R6        10k                  R_2010_5025Metric                                   44.1404   -20.4948    0.0000  top
+R7        10k                  R_2010_5025Metric                                   38.4000     9.7820  -90.0000  top
+R8        5.5Ω                R_2010_5025Metric                                   31.5155     7.2420    0.0000  top
+R9        49.9k                R_0805_2012Metric                                   23.6827    -4.6970  180.0000  top
+R10       75k                  R_2010_5025Metric                                   18.3952    -6.8845  -90.0000  top
+R11       10k                  R_2010_5025Metric                                    3.6452    -6.0170  180.0000  top
+R12       10k                  R_2010_5025Metric                                   43.7327    12.2030  180.0000  top
+U2        TPL5110              SOT-23-6                                             7.9200   -13.0780    0.0000  top
+U3        TPS63002             Texas_DSC0010J_ThermalVias                          22.1440   -12.8240  -90.0000  top
+U4        DS1307Z+             SOIC-8_3.9x4.9mm_P1.27mm                            52.3700   -15.1100  180.0000  top
+U5        MCP3001-I_ST         Microchip-MCP3001-I_ST-Level_A                      32.0368    -4.4080    0.0000  top
+Y1        Crystal              Crystal_SMD_MicroCrystal_CM9V-T1A-2Pin_1.6x1.0mm    57.1960   -16.3800   90.0000  top
 ## End

@@ -8,6 +8,7 @@ CUSTOM_OS_IMG_NAME:= custom-${OS_IMG_NAME}
 DT_BLOB := ./os_stub/boot/dt-blob.bin
 PYTHON_PACKAGE :=./os_stub/opt/sticky_pi/sticky_pi_device.tar.gz
 NET_CONF :=./os_stub/etc/wpa_supplicant/wpa_supplicant.conf
+PACMAN_MIRROR_CONF :=./os_stub/etc/pacman.d/mirrorlist
 
 .PHONY: base_os custom_os device_tree all
 all: custom_os
@@ -18,15 +19,16 @@ custom_os: ${CUSTOM_OS_IMG_NAME}.gz
 device_tree: ${DT_BLOB}
 net_conf: ${NET_CONF}
 python_package: ${PYTHON_PACKAGE}
-
+pacman_mirror_conf : ${PACMAN_MIRROR_CONF}
 
 
 
 ${BASE_OS_IMG_NAME}.gz: utils/make_base_os.sh
 	@set +a
 	@bash $< || (rm -f tmp-${OS_IMG_NAME}; echo "Failed to make base image!"; exit 1)
-	@echo "Made base image $@ !"
+	@echo "Made base image. Now compressing..."
 	@gzip ${BASE_OS_IMG_NAME} -f
+	@echo "Done with $@.gz"
 	@set -a
 
 
@@ -54,7 +56,14 @@ ${NET_CONF}: .env
 	@echo "}" >> $@
 	@echo Made $@
 
-${CUSTOM_OS_IMG_NAME}.gz: utils/emulate_arm.sh  base-${OS_IMG_NAME}.gz ${PYTHON_PACKAGE} ${NET_CONF}  ${DT_BLOB}
+${PACMAN_MIRROR_CONF}: .env
+	@mkdir -p $(shell dirname $@)
+	@echo -n "Server = " > $@
+	@echo ${MIRROR_URL} >> $@
+	@echo Made $@
+
+
+${CUSTOM_OS_IMG_NAME}.gz: utils/emulate_arm.sh  base-${OS_IMG_NAME}.gz ${PYTHON_PACKAGE} ${NET_CONF}  ${DT_BLOB} ${PACMAN_MIRROR_CONF}
 	@set +a
 	@bash $<  || (rm -f tmp-${OS_IMG_NAME};  echo "Failed to make final image!"; exit 1)
 	@echo "Made final image ${CUSTOM_OS_IMG_NAME}! Compressing to $@"

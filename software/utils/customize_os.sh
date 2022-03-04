@@ -9,7 +9,8 @@ pacman-key --populate
 pacman -Syy
 pacman -Syu --noconfirm
 pacman -S python-pip python-requests python-wheel rng-tools dosfstools devtools libjpeg uboot-tools base-devel parted dhclient git cmake   --needed --noconfirm
-pacman -S wiringpi  gobject-introspection bluez bluez-utils dbus-python python-gobject --needed --noconfirm
+#pacman -S wiringpi  gobject-introspection bluez bluez-utils dbus-python python-gobject --needed --noconfirm
+pacman -S wiringpi  --needed --noconfirm
 pacman -S uvicorn python-fastapi python-pydantic python-aiofiles  --needed --noconfirm
 pacman -Scc --noconfirm
 

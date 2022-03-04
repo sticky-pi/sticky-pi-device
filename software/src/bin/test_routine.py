@@ -17,9 +17,6 @@ import picamera
 
 # 1. test camera should show light intensity and keep light on
 # 2. test camera in darkness!!
-# 3. button state holder issues:
-#        * does not hold long?! leak?
-#        * If button is push long, smokeeeeeeee! -> resistor between battery and delay/m drive?
 
 # 3. sync optimisation?
 # 4. pull down resistor to so we can test without a pi?
@@ -144,11 +141,11 @@ if __name__ == '__main__':
     # ==============================================================
 
     logging.info("------------- TESTING DATA SYNCER -------------")
-    # try:
-    ds = DataSyncer(user_requested=True, periodic=False, battery_level=-1, no_files=True)
-    ds.sync()
-    time.sleep(2)
-    logging.info("Time     : " + str(datetime.datetime.now()))
+    # # try:
+    # ds = DataSyncer(user_requested=True, periodic=False, battery_level=-1, no_files=True)
+    # ds.sync()
+    # time.sleep(2)
+    # logging.info("Time     : " + str(datetime.datetime.now()))
     # except Exception as e:
     #     logging.error(e)
 

@@ -25,7 +25,7 @@ class Metadata(BaseModel):
 
 
 class ClearDiskInfo(BaseModel):
-    dev_id: str
+    device_id: str
 
 
 class ConfigHandler(dict):
@@ -35,7 +35,9 @@ class ConfigHandler(dict):
         "SPI_LOG_FILENAME": str,
         "SPI_METADATA_FILENAME": str,
         "CURRENT_BATTERY_LEVEL": int,
-        "SPI_VERSION": str
+        "FIRST_BOOT": int,
+        "SPI_VERSION": str,
+        "SPI_DEVICE_SERVER_PACEMAKER_FILE": str
     }
 
     def __init__(self):
@@ -104,6 +106,7 @@ def _status():
            "datetime": time.time(),
            "version": config.SPI_VERSION,
            "battery_level": config.CURRENT_BATTERY_LEVEL,
+           "first_boot": bool(config.FIRST_BOOT),
            'available_disk_space': available_disk_space()}
     return out
 
@@ -132,9 +135,18 @@ async def metadata(meta_item: Metadata):
     return _status()
 
 
+@app.post("/keep_alive")
+async def keep_alive(info: ClearDiskInfo):
+    if dev_id != info.device_id:
+        raise fastapi.HTTPException(400, "Wrong device id")
+
+    with open(config.SPI_DEVICE_SERVER_PACEMAKER_FILE, 'w') as f:
+        f.write("")
+
+
 @app.post("/clear_disk")
 async def clear_disk(info: ClearDiskInfo):
-    if dev_id != info.dev_id:
+    if dev_id != info.device_id:
         raise fastapi.HTTPException(400, "Wrong device id")
 
     if device_status['available_disk_space'] < MIN_AVAILABLE_DISK_SPACE:

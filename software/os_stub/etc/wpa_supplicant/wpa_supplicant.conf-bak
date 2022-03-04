@@ -1,6 +1,0 @@
-network={
-ssid="sticky-pi-net"
-scan_ssid=0
-key_mgmt=WPA-PSK
-psk="sticky-pi"
-}

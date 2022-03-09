@@ -148,7 +148,7 @@ if __name__ == '__main__':
     # logging.info("Time     : " + str(datetime.datetime.now()))
     # except Exception as e:
     #     logging.error(e)
-
+    logging.info(subprocess.check_output("sync_to_harvester.py --no-files --first-boot", shell=True).decode())
     # ==============================================================
 
     time.sleep(5)
@@ -165,10 +165,10 @@ if __name__ == '__main__':
         camera.framerate = 10
         camera.resolution = (int(os.environ["SPI_IM_W"]), int(os.environ["SPI_IM_H"]))
 
-        camera.zoom = (int(os.environ["SPI_ZOOM_X"]),
-                       int(os.environ["SPI_ZOOM_Y"]),
-                       int(os.environ["SPI_ZOOM_W"]),
-                       int(os.environ["SPI_ZOOM_H"]))
+        camera.zoom = (float(os.environ["SPI_ZOOM_X"]),
+                       float(os.environ["SPI_ZOOM_Y"]),
+                       float(os.environ["SPI_ZOOM_W"]),
+                       float(os.environ["SPI_ZOOM_H"]))
         camera.flash_mode = 'off'
         try:
             SPI_FLASH_GPIO = int(os.environ["SPI_FLASH_GPIO"])
@@ -177,7 +177,7 @@ if __name__ == '__main__':
             SPI_TESTING_GPIO = int(os.environ["SPI_TESTING_GPIO"])
             GPIO.setup(SPI_TESTING_GPIO, GPIO.IN)  # set a port/pin as an output
             GPIO.output(SPI_FLASH_GPIO, 1)
-            while GPIO.input(SPI_TESTING_GPIO, ):
+            while GPIO.input(SPI_TESTING_GPIO):
                 camera.start_preview()
                 time.sleep(2)
                 camera.stop_preview()

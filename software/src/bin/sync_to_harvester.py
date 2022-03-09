@@ -35,6 +35,7 @@ def find_harvester():
         try:
             peers = subprocess.check_output("wpa_cli p2p_peers", shell=True, universal_newlines=True)
         except subprocess.CalledProcessError:
+            peers = []
             time.sleep(0.5)
             continue
         peers = peers.splitlines()

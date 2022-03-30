@@ -88,6 +88,7 @@ echo "Syncing time trying data harvester"
   set_time_from_api_net.py
   ) || (
   echo "Failed, trying to get time through configured wifi network"
+  pkill wpa_supplicant
   wpa_supplicant -Dnl80211 -iwlan0 -c/etc/wpa_supplicant/wpa_supplicant.conf -B
   # we will requests a dynamic IP from the router. also not waiting (-nw)
   sleep 2

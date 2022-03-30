@@ -51,7 +51,12 @@ class ConfigHandler(dict):
 
 
 config = ConfigHandler()
-dev_id = device_id()
+
+if "MOCK_DEVICE_ID" in os.environ and os.environ["MOCK_DEVICE_ID"]:
+    dev_id = os.environ["MOCK_DEVICE_ID"]
+else:
+    dev_id = device_id()
+
 app = FastAPI()
 img_dir = os.path.join(config.SPI_IMAGE_DIR, dev_id)
 

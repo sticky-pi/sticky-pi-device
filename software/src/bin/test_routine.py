@@ -4,10 +4,8 @@ import time
 import datetime
 import os
 import logging
-from sticky_pi_device.data_syncer import DataSyncer
 from sticky_pi_device.utils import device_id
 import RPi.GPIO as GPIO  # import RPi.GPIO module
-from gpiozero import MCP3001
 import Adafruit_DHT
 import subprocess
 import picamera

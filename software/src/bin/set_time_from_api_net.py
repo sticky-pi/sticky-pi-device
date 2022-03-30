@@ -15,7 +15,7 @@ if __name__ == '__main__':
     if r.status_code != 200:
         raise Exception(f"Could not retrieve {URL}. Status: {r.status_code}")
 
-    content  = json.loads(r.content)
+    content = json.loads(r.content)
     unix_time = int(content['unixtime'])
     time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(unix_time))
     command = ["hwclock", "--set", "--date", time_str, "--utc", "--noadjfile"]

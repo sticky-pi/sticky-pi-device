@@ -148,6 +148,7 @@ if __name__ == '__main__':
     zeroconf.register_service(info)
     os.environ['CURRENT_BATTERY_LEVEL'] = option_dict["battery_level"]
     os.environ['FIRST_BOOT'] = str(int(option_dict["first_boot"]))
+    os.environ['SPI_IS_MOCK_DEVICE'] = "0"
 
     try:
 

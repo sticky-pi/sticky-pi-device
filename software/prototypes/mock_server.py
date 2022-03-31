@@ -1,4 +1,6 @@
 #!/bin/python
+import shutil
+import tempfile
 from optparse import OptionParser
 import subprocess
 import os
@@ -21,7 +23,6 @@ IFNAME= "wlp0s20f3"
 USE_DIRECT_WIFI = False
 CURRENT_BATTERY_LEVEL = "0"
 SPI_DRIVE_LABEL = "spi-drive"
-SPI_IMAGE_DIR = "/tmp/spi-drive"
 SPI_LOG_FILENAME = "test.log"
 SPI_METADATA_FILENAME = "metadata.json"
 
@@ -86,9 +87,29 @@ class MockDevice(Process):
         self._ip = ip_addr
         self._to_stop = False
 
+    def _make_dummy_images(self, n=(8,20)):
+        import datetime
+        import random
+        from PIL import Image
+
+        target = os.path.join(SPI_IMAGE_DIR, self._device_name)
+        for i in range(int(random.uniform(*n))):
+            timestamp = round(random.uniform(1.6e9, 1.7e9))
+            dt = datetime.datetime.fromtimestamp(timestamp)
+            filename = f'{self._device_name}.{dt.strftime("%Y-%m-%d_%H-%M-%S")}.jpg'
+            path = os.path.join(target, filename)
+
+
+            width, height = 1600, 1200
+            valid_solid_color_jpeg = Image.new(mode='RGB', size=(width, height),
+                                               color=tuple([int(random.uniform(0,255)) for i in range(3)]))
+            valid_solid_color_jpeg.save(path)
+            # with open(path, 'wb') as f:
+            #     f.write(os.urandom(1024 * 1024))
+
     def run(self) -> None:
         os.makedirs(os.path.join(SPI_IMAGE_DIR, self._device_name), exist_ok=True)
-
+        self._make_dummy_images()
         ip_version = IPVersion.V4Only
 
         desc = {'path': '/'}
@@ -110,6 +131,7 @@ class MockDevice(Process):
         os.environ['SPI_DRIVE_LABEL'] = SPI_DRIVE_LABEL
         os.environ['SPI_IMAGE_DIR'] = SPI_IMAGE_DIR
         os.environ['SPI_LOG_FILENAME'] = SPI_LOG_FILENAME
+        os.environ['SPI_IS_MOCK_DEVICE'] = "1"
         os.environ['SPI_METADATA_FILENAME'] = SPI_METADATA_FILENAME
         os.environ['SPI_VERSION'] = SPI_VERSION
         os.environ['SPI_DEVICE_SERVER_PACEMAKER_FILE'] = SPI_DEVICE_SERVER_PACEMAKER_FILE
@@ -129,6 +151,7 @@ class MockDevice(Process):
             self.stop()
 
         finally:
+
             zeroconf.unregister_service(info)
             zeroconf.close()
 
@@ -144,33 +167,41 @@ if __name__ == '__main__':
         i = int(sys.argv[1])
     except IndexError as e:
         i = None
+    SPI_IMAGE_DIR = tempfile.mkdtemp()
+    try:
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        os.makedirs(SPI_IMAGE_DIR, exist_ok=True)
+        if USE_DIRECT_WIFI:
+            ip = set_direct_wifi_connection(SPI_IMAGE_DIR, DEFAULT_P2P_CONFIG_FILE, PING_HARVESTER_TIMEOUT,
+                                            SPI_HARVESTER_NAME_PATTERN, FIND_HARVESTER_TIMEOUT,
+                                            interface=IFNAME)
+        else:
+            ip = get_ip_address(IFNAME)
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    os.makedirs(SPI_IMAGE_DIR, exist_ok=True)
-    if USE_DIRECT_WIFI:
-        ip = set_direct_wifi_connection(SPI_IMAGE_DIR, DEFAULT_P2P_CONFIG_FILE, PING_HARVESTER_TIMEOUT,
-                                        SPI_HARVESTER_NAME_PATTERN, FIND_HARVESTER_TIMEOUT,
-                                        interface=IFNAME)
-    else:
-        ip = get_ip_address(IFNAME)
+        if i:
+            dev = [MockDevice(8080 + i, "%08d" %i , ip)]
+        else:
+            dev = [
+                MockDevice(8081, "00000001", ip),
+                MockDevice(8082, "00000002", ip),
+                MockDevice(8083, "00000003", ip),
+                MockDevice(8084, "00000004", ip),
+                MockDevice(8085, "00000005", ip),
+                MockDevice(8086, "00000006", ip),
+                ]
 
-    if i:
-        dev = [MockDevice(8080 + i, "%08d" %i , ip)]
-    else:
-        dev = [
-            MockDevice(8081, "00000001", ip),
-            MockDevice(8082, "00000002", ip),
-            MockDevice(8083, "00000003", ip),
-            ]
+        for d in dev:
+            d.start()
+            time.sleep(2)
 
-    for d in dev:
-        d.start()
-    stop =False
-    while not stop:
-        try:
-            time.sleep(1)
-        except KeyboardInterrupt:
-            for d in dev:
-                d.join()
-            stop = True
+        stop =False
+        while not stop:
+            try:
+                time.sleep(1)
+            except KeyboardInterrupt:
+                for d in dev:
+                    d.join()
+                stop = True
+    finally:
+        shutil.rmtree(SPI_IMAGE_DIR)

@@ -37,7 +37,8 @@ class ConfigHandler(dict):
         "CURRENT_BATTERY_LEVEL": int,
         "FIRST_BOOT": int,
         "SPI_VERSION": str,
-        "SPI_DEVICE_SERVER_PACEMAKER_FILE": str
+        "SPI_DEVICE_SERVER_PACEMAKER_FILE": str,
+        "SPI_IS_MOCK_DEVICE": int
     }
 
     def __init__(self):
@@ -110,9 +111,11 @@ def _status():
     out = {"device_id": dev_id,
            "datetime": time.time(),
            "version": config.SPI_VERSION,
+           "is_mock_device": config.SPI_IS_MOCK_DEVICE,
            "battery_level": config.CURRENT_BATTERY_LEVEL,
            "first_boot": bool(config.FIRST_BOOT),
-           'available_disk_space': available_disk_space()}
+           'available_disk_space': available_disk_space(),
+           }
     return out
 
 

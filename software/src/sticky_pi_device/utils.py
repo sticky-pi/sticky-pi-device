@@ -50,8 +50,8 @@ def remove_old_files(location):
         os.remove(r)
 
 
-def set_direct_wifi_connection(img_dir, default_content, ping_harvester_timeout, spi_harvester_name_pattern, find_harvseter_timeout, interface="wlan0"):
-    config_file = os.path.join(img_dir, 'p2p_wpa_supplicant.conf')
+def set_direct_wifi_connection(persistent_dir, default_content, ping_harvester_timeout, spi_harvester_name_pattern, find_harvseter_timeout, interface="wlan0"):
+    config_file = os.path.join(persistent_dir, 'p2p_wpa_supplicant.conf')
 
     if not os.path.exists(config_file):
         with open(config_file, 'w') as f:
@@ -150,15 +150,22 @@ def get_ip_address(ifname, version = "v4"):
     #     logging.error(e)
     #     return
 
+def mount_persistent_partition(label, taget):
+    os.system(f"mount {label} {taget}")
+
+
+def unmount_persistent_partition(label):
+    os.system(f"umount {label}")
+
 
 
 def set_wifi(interface="wlan0"):
     os.system("rfkill unblock all")
     os.system(f"ip link set {interface} up")
 
-def set_wpa(wpa_timeout, img_dir):
+def set_wpa(wpa_timeout, persistent_dir):
     sys_config_file = '/etc/wpa_supplicant/wpa_supplicant.conf'
-    config_file = os.path.join(img_dir, 'wpa_supplicant.conf')
+    config_file = os.path.join(persistent_dir, 'wpa_supplicant.conf')
 
     if not os.path.exists(config_file):
         import shutil
@@ -182,21 +189,16 @@ def set_wpa(wpa_timeout, img_dir):
     return ""
 
 
-def set_wifi_from_qr(spi_img_dir, spi_flash_gpio):
+def set_wifi_from_qr(persistent_dir):
     import re
     import shutil
-    import RPi.GPIO as GPIO  # import RPi.GPIO module
+    # import RPi.GPIO as GPIO  # import RPi.GPIO module
 
-    GPIO.setmode(GPIO.BCM)
+    # GPIO.setmode(GPIO.BCM)
+    # GPIO.setup(spi_flash_gpio, GPIO.OUT)  # set a port/pin as an output
     tmp_file = tempfile.mktemp(suffix=".jpg")
-    GPIO.setup(spi_flash_gpio, GPIO.OUT)  # set a port/pin as an output
     try:
         for i in range(5):
-
-            GPIO.output(spi_flash_gpio, 1)
-            time.sleep(0.25)
-            GPIO.output(spi_flash_gpio, 0)
-
             os.system(f"/opt/vc/bin/raspistill -o {tmp_file} -w 1296 -h 972 -vf -t 1")
             try:
                 decoded = subprocess.check_output(f"zbarimg {tmp_file} -q", shell=True, universal_newlines=True)
@@ -204,10 +206,6 @@ def set_wifi_from_qr(spi_img_dir, spi_flash_gpio):
                 continue
 
             m = re.match("QR-Code:WIFI:(?P<credentials>.*)", decoded)
-            for j in range(5):
-                GPIO.output(spi_flash_gpio, 1)
-                time.sleep(0.1)
-                GPIO.output(spi_flash_gpio, 0)
 
             if m:
                 creds = m.group('credentials')
@@ -235,8 +233,8 @@ def set_wifi_from_qr(spi_img_dir, spi_flash_gpio):
                 for j in range(10):
                     ip = get_ip_address("wlan0")
                     if ip:
-                        tmp_cfg_file = os.path.join(spi_img_dir,'wpa_supplicant.conf.tmp')
-                        cfg_file = os.path.join(spi_img_dir, 'wpa_supplicant.conf')
+                        tmp_cfg_file = os.path.join(persistent_dir,'wpa_supplicant.conf.tmp')
+                        cfg_file = os.path.join(persistent_dir, 'wpa_supplicant.conf')
                         shutil.copyfile(cfg_file, tmp_cfg_file)
                         os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {tmp_cfg_file}")
                         os.rename(tmp_cfg_file, cfg_file)

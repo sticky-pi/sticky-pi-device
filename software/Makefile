@@ -48,11 +48,15 @@ ${PYTHON_PACKAGE}: ${PYTHON_RESOURCES} .env
 
 ${NET_CONF}: .env
 	@mkdir -p $(shell dirname $@)
-	@echo "network={" > $@
+	@echo "ctrl_interface=DIR=/var/run/wpa_supplicant" > $@
+	@echo "network={" >> $@
 	@echo "ssid=\"${SPI_WIFI_SSID}\"" >>  $@
 	@echo "scan_ssid=0" >> $@
 	@echo "key_mgmt=WPA-PSK" >> $@
 	@echo "psk=\"${SPI_WIFI_PASSWORD}\"" >> $@
+#	@echo "proto=RSN" >> $@
+#	@echo "pairwise=CCMP" >> $@
+#	@echo "auth_alg=OPEN" >> $@
 	@echo "}" >> $@
 	@echo Made $@
 

@@ -25,6 +25,7 @@ LOG_FILE=${SPI_IMAGE_DIR}/${SPI_LOG_FILENAME}
 if [ ! -f "${LOG_FILE}" ]; then
     set -e
     echo "${LOG_FILE} does NOT exist. Performing first boot."
+#    sh /opt/sticky_pi/utils/first_boot.sh &&
     sh /opt/sticky_pi/utils/first_boot.sh &&
     touch ${LOG_FILE} && sync &&
     # this restarts the system, at low level

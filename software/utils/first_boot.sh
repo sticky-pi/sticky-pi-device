@@ -37,16 +37,13 @@ p
 3
 
 
-t
-3
-c
 w
 EOF
 
 partprobe $SD
-mkfs.vfat ${SD}p4
+mkfs.ext4 ${SD}p4
 sync
-fatlabel  ${SD}p4 ${SPI_DRIVE_LABEL}
+e2label ${DEV}p4 ${SPI_DRIVE_LABEL}
 sync
 echo "New partition labelled"
 )
@@ -59,7 +56,7 @@ echo "Mounting partition?"
 
 grep "^LABEL=${SPI_DRIVE_LABEL}" /etc/fstab -c || (
   echo "Adding new partition to fstab"
-  echo "LABEL=${SPI_DRIVE_LABEL}  ${SPI_IMAGE_DIR}   vfat    defaults        0       0" > /etc/fstab &&
+  echo "LABEL=${SPI_DRIVE_LABEL}  ${SPI_IMAGE_DIR}   ext4    noatime,data=writeback        0       0" > /etc/fstab &&
   mkdir -p ${SPI_IMAGE_DIR}  &&
   mount -a &&
   sync &&
@@ -80,6 +77,9 @@ echo "Syncing time trying data harvester"
 #echo "Failed. Getting time from public server"
 #cat another_fail || echo "Failed too. Check internet connection"
 #)
+
+kill ${BLINKER} >/dev/null 2>&1
+
 /usr/bin/sync_to_harvester.py --first-boot || (
   # in the background, initiate wpa_supplicant. We are not waiting for success
   rfkill unblock all
@@ -100,7 +100,7 @@ echo "Syncing time trying data harvester"
 
 # make the image read only if defined in env file
 
-kill ${BLINKER} >/dev/null 2>&1
+
 blink 4 &
 BLINKER=$!
 
@@ -109,8 +109,6 @@ if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   (
   cp /etc/fstab /etc/fstab-backup
   cat /etc/fstab-backup > /etc/fstab
-
-
   echo 'tmpfs   /var/log    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'tmpfs   /var/tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
   echo 'tmpfs   /tmp    tmpfs   nodev,nosuid    0   0' >> /etc/fstab
@@ -127,3 +125,4 @@ if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   umount ${SD}p1
 fi
 
+sleep 5

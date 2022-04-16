@@ -1112,7 +1112,7 @@ void calc_lum(RASPISTILL_STATE *state, MMAL_COMPONENT_T *camera)
 int main(int argc, const char **argv)
 {
 
-    spi_im_w =atoi(SPI_IM_W);
+    spi_im_w = atoi(SPI_IM_W);
     spi_im_h = atoi(SPI_IM_H);
     spi_im_jpeg_quality = atoi(SPI_IM_JPEG_QUALITY);
     char filename[128] = "";
@@ -1400,7 +1400,7 @@ error:
         logging("Not syncing");
         }
 
-    sprintf(command_buffer, "%s -b %i %s", "sync_to_harvester.py", state.bat, flag);
+    sprintf(command_buffer, "%s -b %i %s 2>&1", "sync_to_harvester.py", state.bat, flag);
 
     if(strlen(flag) >0)
         system(command_buffer);

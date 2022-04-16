@@ -29,8 +29,11 @@ EOF
 mkfs.vfat ${DEV}p1
 # root partition
 mkfs.ext4 ${DEV}p2
-# small persistent partition for saving e.g. bluetooth paired device
+e2label ${DEV}p2 ROOT
+
+# small persistent partition for saving e.g. bluetooth paired device wpa_config
 mkfs.ext4 ${DEV}p3
+e2label ${DEV}p3 ${SPI_PERSISTENT_PARTITION_LABEL}
 
 mkdir -p $MOUNT_DIR/boot
 mkdir -p $MOUNT_DIR/root

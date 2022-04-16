@@ -129,13 +129,15 @@ async def status():
 async def metadata(meta_item: Metadata):
     meta = meta_item.dict()
     time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(meta["datetime"]))
-    command = ["hwclock", "--set", "--date", time_str, "--utc", "--noadjfile"]
-    p = Popen(command)
-    exit_code = p.wait(5)
-    if exit_code != 0:
-        # fixme should be an error!
-        logging.error(f"Cannot set localtime to {time_str}")
-
+    if config.SPI_IS_MOCK_DEVICE == 0:
+        command = ["hwclock", "--set", "--date", time_str, "--utc", "--noadjfile"]
+        p = Popen(command)
+        exit_code = p.wait(5)
+        if exit_code != 0:
+            # fixme should be an error!
+            logging.error(f"Cannot set localtime to {time_str}")
+    else:
+        logging.info("Mock device, not setting RTC")
     path = os.path.join(config.SPI_IMAGE_DIR, config.SPI_METADATA_FILENAME)
     with open(path, 'w') as f:
         f.write(json.dumps(meta))
@@ -152,15 +154,24 @@ async def keep_alive(info: ClearDiskInfo):
         f.write("")
 
 
+@app.post("/stop")
+async def stop(info: ClearDiskInfo):
+    if dev_id != info.device_id:
+        raise fastapi.HTTPException(400, "Wrong device id")
+    if os.path.exists(config.SPI_DEVICE_SERVER_PACEMAKER_FILE):
+        os.remove(config.SPI_DEVICE_SERVER_PACEMAKER_FILE)
+
+
 @app.post("/clear_disk")
 async def clear_disk(info: ClearDiskInfo):
     if dev_id != info.device_id:
         raise fastapi.HTTPException(400, "Wrong device id")
-
-    if device_status['available_disk_space'] < MIN_AVAILABLE_DISK_SPACE:
-        logging.warning("Removing old files")
-        remove_old_files()
-
+    if config.SPI_IS_MOCK_DEVICE == 0:
+        if _status()['available_disk_space'] < MIN_AVAILABLE_DISK_SPACE:
+            logging.warning("Removing old files")
+            remove_old_files()
+    else:
+        logging.info("Not clearing disk on mock device")
 
 @app.get("/images")
 async def images():

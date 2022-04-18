@@ -43,7 +43,7 @@ EOF
 partprobe $SD
 mkfs.ext4 ${SD}p4
 sync
-e2label ${DEV}p4 ${SPI_DRIVE_LABEL}
+e2label ${SD}p4 ${SPI_DRIVE_LABEL}
 sync
 echo "New partition labelled"
 )
@@ -96,7 +96,7 @@ kill ${BLINKER} >/dev/null 2>&1
   set_time_from_api_net.py
 )
 
-
+sync
 
 # make the image read only if defined in env file
 
@@ -124,5 +124,6 @@ if [[ ${SPI_MAKE_READ_ONLY} == 1 ]]; then
   history -c -w) ||
   umount ${SD}p1
 fi
-
-sleep 5
+sync
+echo "DONE just sleeping"
+sleep 10

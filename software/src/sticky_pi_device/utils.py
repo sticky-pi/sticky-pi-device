@@ -151,11 +151,11 @@ def get_ip_address(ifname, version = "v4"):
     #     return
 
 def mount_persistent_partition(label, taget):
-    os.system(f"mount {label} {taget}")
+    os.system(f"mount -L {label} {taget}")
 
 
-def unmount_persistent_partition(label):
-    os.system(f"umount {label}")
+def unmount_persistent_partition(path):
+    os.system(f"umount {path}")
 
 
 
@@ -174,7 +174,7 @@ def set_wpa(wpa_timeout, persistent_dir):
     logging.info(f"Restarting  wpa_supplicant.")
     os.system(f"pkill wpa_supplicant")
     os.system(f"wpa_supplicant -iwlan0  -B -Dnl80211 -c{config_file}")
-    time.sleep(2)
+    time.sleep(3)
     logging.info(f"Restarting dhclient.")
     os.system("dhclient -x")
     logging.info(f"Getting ip address now.")

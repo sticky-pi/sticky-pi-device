@@ -15,10 +15,7 @@ setup(
                       'pytz',
                       'netifaces',
                       'requests',
-                      'uvicorn',
-                      'fastapi',
                       'RPi.GPIO',
-                      'pydantic',
                       "zeroconf",
                       "netifaces"
                       ]

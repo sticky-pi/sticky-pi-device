@@ -9,7 +9,7 @@ pacman-key --populate
 pacman -Syy
 pacman -Syu --noconfirm
 pacman -S python-pip python-requests python-wheel rng-tools dosfstools devtools libjpeg uboot-tools base-devel parted dhclient git cmake  libtommath --needed --noconfirm
-pacman -S wiringpi zbar uvicorn python-fastapi python-pytz python-pydantic python-aiofiles  --needed --noconfirm
+pacman -S wiringpi zbar python-pytz  python-aiofiles  --needed --noconfirm
 
 pacman -Scc --noconfirm
 
@@ -33,6 +33,7 @@ echo Now compiling our own WPA supplicant
 cd /tmp/
 curl  https://w1.fi/releases/wpa_supplicant-2.10.tar.gz > wpa_supplicant-2.10.tar.gz
 tar -xvf wpa_supplicant-2.10.tar.gz
+cd wpa_supplicant-2.10
 
 cat > wpa_supplicant/.config << "EOF"
 CONFIG_BACKEND=file

@@ -12,22 +12,22 @@ import RPi.GPIO as GPIO  # import RPi.GPIO module
 
 from sticky_pi_device.utils import device_id, set_wifi, set_wpa, set_direct_wifi_connection, \
     set_wifi_from_qr, mount_persistent_partition, unmount_persistent_partition
+from sticky_pi_device.sync_server import CustomServer
 
-FIND_HARVESTER_TIMEOUT = 10  # s
-PING_HARVESTER_TIMEOUT = 20  # s
-WPA_TIMEOUT = 5  # s
-DEFAULT_P2P_CONFIG_FILE = """
-ctrl_interface=DIR=/var/run/wpa_supplicant
-driver_param=use_p2p_group_interface=1
-persistent_reconnect=1
-device_name=DIRECT-sticky-pi
-device_type=6-0050F204-1
-config_methods=virtual_push_button
-p2p_go_intent=0
-p2p_go_ht40=1
-country=US
-"""
-
+# FIND_HARVESTER_TIMEOUT = 10  # s
+# PING_HARVESTER_TIMEOUT = 20  # s
+# DEFAULT_P2P_CONFIG_FILE = """
+# ctrl_interface=DIR=/var/run/wpa_supplicant
+# driver_param=use_p2p_group_interface=1
+# persistent_reconnect=1
+# device_name=DIRECT-sticky-pi
+# device_type=6-0050F204-1
+# config_methods=virtual_push_button
+# p2p_go_intent=0
+# p2p_go_ht40=1
+# country=US
+# """
+#
 
 #
 # SPI_HARVESTER_NAME_PATTERN = "spi-harvester"
@@ -37,6 +37,8 @@ country=US
 # # we will use a pacemaker mechanism to keep it alive
 # SPI_SYNC_TIMEOUT = 120
 
+
+WPA_TIMEOUT = 8  # s
 
 class ConfigHandler(dict):
     _type_dict = {
@@ -153,28 +155,12 @@ if __name__ == '__main__':
 
         blinker.set_period(5.0)
 
-        import uvicorn
+
         from zeroconf import IPVersion, ServiceInfo, Zeroconf
         import contextlib
         # ensure dir exists
         os.makedirs(os.path.join(config.SPI_IMAGE_DIR, device_id()), exist_ok=True)
 
-
-        class Server(uvicorn.Server):
-            def install_signal_handlers(self):
-                pass
-
-            @contextlib.contextmanager
-            def run_in_thread(self):
-                thread = threading.Thread(target=self.run)
-                thread.start()
-                try:
-                    while not self.started:
-                        time.sleep(1e-3)
-                    yield
-                finally:
-                    self.should_exit = True
-                    thread.join()
 
 
         ip_version = IPVersion.V4Only
@@ -195,32 +181,37 @@ if __name__ == '__main__':
         os.environ['FIRST_BOOT'] = str(int(option_dict["first_boot"]))
         os.environ['SPI_IS_MOCK_DEVICE'] = "0"
 
+        server = CustomServer("0.0.0.0", config.SPI_DEVICE_SERVER_PORT)
         try:
-
-            uvicorn_config = uvicorn.Config("sticky_pi_device.sync_server:app",
-                                            host="0.0.0.0", port=config.SPI_DEVICE_SERVER_PORT,
-                                            reload=False, workers=4)
-
-            # config = Config("example:app", host="127.0.0.1", port=5000, log_level="info")
-            server = Server(config=uvicorn_config)
+            logging.info(f'Starting server at {time.time()}')
+            server.start()
+            logging.info('Started')
 
             with open(config.SPI_DEVICE_SERVER_PACEMAKER_FILE, 'w') as f:
                 f.write("")
 
             pace = 0
-            with server.run_in_thread():
-                start = time.time()
-                while time.time() - start < config.SPI_SYNC_TIMEOUT or option_dict["infinite"]:
-                    if not os.path.exists(config.SPI_DEVICE_SERVER_PACEMAKER_FILE):
-                        break
-                    mtime = os.path.getmtime(config.SPI_DEVICE_SERVER_PACEMAKER_FILE)
-                    time.sleep(1)
-                    if mtime != pace:
-                        start = time.time()
-                        pace = mtime
+            # with server.run_in_thread():
+            start = time.time()
+            while time.time() - start < config.SPI_SYNC_TIMEOUT or option_dict["infinite"]:
+                if not os.path.exists(config.SPI_DEVICE_SERVER_PACEMAKER_FILE):
+                    logging.info(f'No pacemaker file. exiting {time.time()}')
+                    break
+                mtime = os.path.getmtime(config.SPI_DEVICE_SERVER_PACEMAKER_FILE)
+
+                time.sleep(1)
+                if mtime != pace:
+                    start = time.time()
+                    pace = mtime
+
         finally:
+            logging.info(f'Closing http server')
+            server.stop()
+            logging.info(f'Closing zeroconf')
             zeroconf.unregister_service(info)
             zeroconf.close()
     finally:
+        logging.info(f'Stopping blinker')
         blinker.stop()
-        unmount_persistent_partition(config.SPI_PERSISTENT_PARTITION_LABEL)
+        logging.info(f'Unmounting persistent partition')
+        unmount_persistent_partition(tmp_mount)

@@ -31,10 +31,9 @@ if [ ! -f "${LOG_FILE}" ]; then
     # this restarts the system, at low level
     echo b > /proc/sysrq-trigger
 else
-  # we rotate the log file when it is to large
-
-  if [[ $(wc -l <${LOG_FILE}) -ge 1000 ]]; then
-    sed -i '1,500d' ${LOG_FILE}
+  # we rotate the log file when it is to large > 10000 lines
+  if [[ $(wc -l <${LOG_FILE}) -ge 10000 ]]; then
+    sed -i '1,5000d' ${LOG_FILE}
     echo "Rotating log file" | tee -a ${LOG_FILE}
   fi
 

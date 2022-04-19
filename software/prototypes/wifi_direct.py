@@ -68,17 +68,21 @@ def set_direct_wifi_connection():
     os.system(f"wpa_cli  p2p_connect {harvester_mac} pbc persistent join")
 
     start = time.time()
+    ip = None
     while time.time() - start < PING_HARVESTER_TIMEOUT:
-        os.system("dhclient p2p-wlan0-0 -nw")
 
-        ip = get_ip_address('p2p-wlan0-0')
-        if ip:
+        if not ip:
+            # we kill dhcp client if we could not get an ip
+            os.system("dhclient -x")
+            os.system("dhclient p2p-wlan0-0 -nw")
+            time.sleep(1)
+            ip = get_ip_address('p2p-wlan0-0')
+        else:
             go_ip = ".".join(ip.split(".")[0:3] + ["1"])
-            resp = os.system(f"ping -c 1 -W 0.2 {go_ip} > /dev/null 2>&1")
+            resp = os.system(f"ping -c 1 -W 1 {go_ip} > /dev/null 2>&1")
             if resp == 0:
                 logging.info("Host is up!")
                 return True
-        time.sleep(0.5)
     logging.warning("Cannot set ip or ping GO")
     return False
 

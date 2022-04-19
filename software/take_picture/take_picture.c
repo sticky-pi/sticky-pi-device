@@ -117,6 +117,7 @@ struct stat st = {0};
 
 
 int spi_im_w, spi_im_h, spi_im_jpeg_quality;
+//                              0  1  2  3  4   5   6   7   8   9  10  11  12  13  14  15 16
 int GPIO_TO_WIRING_PI_MAP[]= {30, 31, 8, 9, 7, 21, 22, 11, 10, 13, 12, 14, 26, 23, 15, 16, 27, 0, 1, 24, 28, 29, 3, 4, 5, 6, 25, 2};
 
 #define CUSTOM_EXIF_KEY "EXIF.UserComment"
@@ -775,6 +776,7 @@ static MMAL_STATUS_T  add_custom_exif_field(RASPISTILL_STATE *state){
                 }
                 else{
                     logging_error("Unexpected token in metadata: `%s:%s'", key_string, value_string);
+                    /// fixme. corrupted file should be deleted!!
                 }
             }
             }
@@ -1048,7 +1050,7 @@ int must_try_to_sync() {
 
 
 
-void read_battery_level(RASPISTILL_STATE *state){
+int read_battery_level(){
 // translated from https://stackoverflow.com/questions/24378430/reading-data-out-of-an-adc-mcp3001-with-python-spi works
     int gpio_11 = GPIO_TO_WIRING_PI_MAP[11]; //clk
     int gpio_8 = GPIO_TO_WIRING_PI_MAP[8]; //C0
@@ -1059,35 +1061,46 @@ void read_battery_level(RASPISTILL_STATE *state){
     int i;
     int input_val;
     int oversampling = 8;
-
+    float sleep_dur = 0.005;
     pinMode(gpio_11, OUTPUT);
     pinMode(gpio_8, OUTPUT);
     pinMode(gpio_9, INPUT);
 
-    digitalWrite(gpio_8, HIGH); // CS high
     for(j=0; j != oversampling; ++j){
-        adcvalue = 0;
+
         digitalWrite(gpio_11, LOW); // CLK low
+        sleep(sleep_dur);
+        digitalWrite(gpio_8, HIGH); // CS high
+        sleep(sleep_dur);
         digitalWrite(gpio_8, LOW); //CS low
+        sleep(sleep_dur);
+
         for(i=0; i != 2; ++i){
             digitalWrite(gpio_11,HIGH);
+            sleep(sleep_dur);
             digitalWrite(gpio_11,LOW);
-            sleep(0.01);
+            sleep(sleep_dur);
         }
+
+        adcvalue = 0;
         for(i=0; i != 10; ++i){
             digitalWrite(gpio_11,HIGH);
+            sleep(sleep_dur);
             digitalWrite(gpio_11,LOW);
+            sleep(sleep_dur);
             adcvalue <<= 1;
             input_val = digitalRead(gpio_9);
             if(input_val){
                 adcvalue |= 0x1;
             }
-            digitalWrite(gpio_8, HIGH); // CS high
+            sleep(sleep_dur);
         }
         sum += adcvalue;
+        digitalWrite(gpio_8, HIGH); // CS high
+        sleep(sleep_dur);
        }
-    state->bat = (int) ((100.0 * sum) / (oversampling * 1024.0));
 
+    return (int) ((100.0 * sum) / (oversampling * 1024.0));
 }
 
 
@@ -1133,6 +1146,7 @@ int main(int argc, const char **argv)
         logging("Testing done. staying alive");
         return EX_OK;
     }
+    int battery_level = read_battery_level();
 
     int was_turned_on_by_button = is_manual_on_gpio_up();
     int periodic_sync_attempt = must_try_to_sync();
@@ -1143,6 +1157,7 @@ int main(int argc, const char **argv)
 
    // Our main data storage vessel..
    RASPISTILL_STATE state;
+
    int exit_code = EX_OK;
 
    MMAL_STATUS_T status = MMAL_SUCCESS;
@@ -1166,6 +1181,9 @@ int main(int argc, const char **argv)
 
    set_app_name(argv[0]);
    default_status(&state, timeinfo);
+   // read battery here, before voltage drops due to camera loading?
+   state.bat = battery_level;
+
    // Setup for sensor specific parameters
    get_sensor_defaults(CAMERA_NUM, state.camera_name);
 
@@ -1249,9 +1267,8 @@ int main(int argc, const char **argv)
         MMAL_PARAMETER_CAMERA_SETTINGS_T settings;
 
         // we wait for camera to warmup. meanwhile, we read DHT
-
         read_dht_and_sleep(&state);
-        read_battery_level(&state);
+
         calc_lum(&state, state.camera_component);
          vcos_assert(use_filename == NULL && final_filename == NULL);
          status = create_filenames(&final_filename, &use_filename, filename);

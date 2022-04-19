@@ -48,7 +48,13 @@ def img_file_hash(path):
 
 class S(BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
-
+        self._get_methods = {"/status": "_status", "/images": "_images", "/log": "_log"}
+        self._post_methods = {
+            "/metadata": "_metadata",
+            "/keep_alive": "_keep_alive",
+            "/stop": "_stop",
+            "/clear_disk": "_clear_disk",
+        }
         self._config = ConfigHandler()
 
         if "MOCK_DEVICE_ID" in os.environ and os.environ["MOCK_DEVICE_ID"]:
@@ -90,18 +96,18 @@ class S(BaseHTTPRequestHandler):
 
 
     def do_GET(self):
-        logging.info(f"GET {self.path}")
+
         if self.path.startswith("/static"):
             # todo, prevent getting ../../...
             # i.e. secure path
             path = os.path.relpath(self.path, "/static")
-            logging.info(f"file lives at  {path}")
             self._get_static_file(path)
         else:
-            self._get_methods = {"/status": "_status", "/images": "_images", "/log": "_log"}
-            try:
 
+
+            try:
                 method = self._get_methods[self.path]
+
                 resp = 200
                 m = getattr(self, method)
                 out = m()
@@ -119,14 +125,7 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
 
     def do_POST(self):
-        logging.info(f"POST {self.path}")
 
-        self._post_methods = {
-                "/metadata": "_metadata",
-                    "/keep_alive":"_keep_alive",
-                    "/stop":"_stop",
-                    "/clear_disk":"_clear_disk",
-                              }
         try:
 
             method = self._post_methods[self.path]
@@ -135,9 +134,7 @@ class S(BaseHTTPRequestHandler):
 
             content_length = int(self.headers['Content-Length'])  # <--- Gets the size of data
             post_data = self.rfile.read(content_length)
-            logging.info(post_data)
             content = json.loads(post_data)
-            logging.info(f"{self.path}: {content}")
             resp, out = m(content)
 
         except Exception as e:
@@ -162,10 +159,11 @@ class S(BaseHTTPRequestHandler):
 
     def _log(self):
         log_file = os.path.join(self._config.SPI_IMAGE_DIR, self._config.SPI_LOG_FILENAME)
-        o = []
+        out = {}
         with open(log_file, 'r') as f:
-            o.append(f.read())
-        return json.dumps(o)
+            for i, l in enumerate(f):
+                out[i] = l
+        return out
 
 
     def _images(self):
@@ -199,8 +197,13 @@ class S(BaseHTTPRequestHandler):
         else:
             logging.info("Mock device, not setting RTC")
         path = os.path.join(self._config.SPI_IMAGE_DIR, self._config.SPI_METADATA_FILENAME)
-        with open(path, 'w') as f:
+        tmp_path = path + ".tmp"
+
+
+        with open(tmp_path , 'w') as f:
             f.write(json.dumps(meta))
+
+        os.rename(tmp_path, path)
 
         return 200, self._status()
 
@@ -266,6 +269,7 @@ class S(BaseHTTPRequestHandler):
 
 class CustomServer(Thread):
     def __init__(self, addr, port):
+
         super(CustomServer, self).__init__()
         server_address = (addr, port)
         self._httpd = HTTPServer(server_address, S)

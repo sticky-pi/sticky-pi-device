@@ -163,17 +163,23 @@ def set_wifi(interface="wlan0"):
     os.system("rfkill unblock all")
     os.system(f"ip link set {interface} up")
 
-def set_wpa(wpa_timeout, persistent_dir):
+def set_wpa(wpa_timeout, persistent_dir, additional_config = None):
     sys_config_file = '/etc/wpa_supplicant/wpa_supplicant.conf'
-    config_file = os.path.join(persistent_dir, 'wpa_supplicant.conf')
-
-    if not os.path.exists(config_file):
-        import shutil
-        shutil.copyfile(sys_config_file, config_file)
+    if additional_config is None:
+        additional_config = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
 
     logging.info(f"Restarting  wpa_supplicant.")
     os.system(f"pkill wpa_supplicant")
-    os.system(f"wpa_supplicant -iwlan0  -B -Dnl80211 -c{config_file}")
+
+    if os.path.exists(additional_config):
+        additional_config_cmd = f"-I{additional_config}"
+    else:
+        additional_config_cmd = ""
+
+    os.system(f"cat {additional_config}")
+    time.sleep(5)
+
+    os.system(f"wpa_supplicant -iwlan0  -B -Dnl80211 -c{sys_config_file} {additional_config_cmd}")
     time.sleep(3)
     logging.info(f"Restarting dhclient.")
     os.system("dhclient -x")
@@ -228,18 +234,23 @@ def set_wifi_from_qr(persistent_dir):
                 time.sleep(2)
                 os.remove(config)
 
-                os.system("dhclient -x")
-                os.system("dhclient wlan0 -nw")
-                for j in range(10):
-                    ip = get_ip_address("wlan0")
+                try:
+                    #we try to append credentials to our config AND to load it. we only keep it if we get an IP
+                    tmp_cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf.tmp')
+                    cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
+                    if not os.path.isfile(cfg_file):
+                        with open(cfg_file, 'w') as f:
+                            f.write("ctrl_interface=DIR=/var/run/wpa_supplicant\n")
+
+                    shutil.copyfile(cfg_file, tmp_cfg_file)
+
+                    os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {tmp_cfg_file}")
+                    ip = set_wpa(5, persistent_dir, tmp_cfg_file)
                     if ip:
-                        tmp_cfg_file = os.path.join(persistent_dir,'wpa_supplicant.conf.tmp')
-                        cfg_file = os.path.join(persistent_dir, 'wpa_supplicant.conf')
-                        shutil.copyfile(cfg_file, tmp_cfg_file)
-                        os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {tmp_cfg_file}")
-                        os.rename(tmp_cfg_file, cfg_file)
+                        shutil.copyfile(tmp_cfg_file, cfg_file)
                         return ip
-                    time.sleep(1)
+                finally:
+                    os.remove(tmp_cfg_file)
 
         time.sleep(1)
     finally:

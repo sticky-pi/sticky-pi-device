@@ -3,7 +3,7 @@
 
 # <file system> <dir> <type> <options> <dump> <pass>
 #/dev/mmcblk0p1  /boot   vfat    defaults        0       0
-LABEL=SPI_DRIVE  /sticky_pi_data   vfat    defaults        0       0
+LABEL=SPI_DRIVE  /sticky_pi_data   ext4    noatime,data=writeback        0       0
 
 
 

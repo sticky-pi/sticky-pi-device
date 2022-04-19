@@ -65,34 +65,37 @@ def test_batt():
     CLK = 11
     CS = 8
     MISO = 9
+
     GPIO.setup(CLK, GPIO.OUT)
     GPIO.setup(CS, GPIO.OUT)
     GPIO.setup(MISO, GPIO.IN)
+    out_sum = 0
+    for i in range(8):
+        GPIO.output(CLK, False)  # CLK low
+        GPIO.output(CS, True)  # /CS high
+        GPIO.output(CS, False)  # /CS low
 
-    GPIO.output(CLK, False)  # CLK low
-    GPIO.output(CS, True)  # /CS high
-    GPIO.output(CS, False)  # /CS low
+        lout = []
+        for i in range(2):
+            GPIO.output(CLK, True)
+            GPIO.output(CLK, False)
+            time.sleep(.01)
+            v = GPIO.input(MISO)
+            lout.append(v)
 
-    lout = []
-    for i in range(2):
-        GPIO.output(CLK, True)
-        GPIO.output(CLK, False)
-        time.sleep(.01)
-        v = GPIO.input(MISO)
-        lout.append(v)
+        out = 0
+        for i in range(10):
+            GPIO.output(CLK, True)
+            GPIO.output(CLK, False)
+            v = GPIO.input(MISO)
+            lout.append(v)
+            out <<= 1
+            if v:
+                out |= 0x1
+        out_sum += out
+        GPIO.output(CS, True)  # /CS high
 
-    out = 0
-    for i in range(10):
-        GPIO.output(CLK, True)
-        GPIO.output(CLK, False)
-        v = GPIO.input(MISO)
-        lout.append(v)
-        out <<= 1
-        if v:
-            out |= 0x1
-
-    GPIO.output(CS, True)  # /CS high
-    logging.info("Battery level  : " + str(out))
+    logging.info("Battery level  : " + str(out_sum/8.0))
     time.sleep(.2)
     return 0
 

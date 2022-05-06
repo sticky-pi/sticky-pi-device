@@ -71,35 +71,8 @@ echo "Setting dummy time"
 hwclock --set --date "2000-01-01 00:00:00" --utc --noadjfile
 hwclock --hctosys --utc --noadjfile
 
-echo "Syncing time trying data harvester"
-
-#cat something_that_fails ||(
-#echo "Failed. Getting time from public server"
-#cat another_fail || echo "Failed too. Check internet connection"
-#)
 
 kill ${BLINKER} >/dev/null 2>&1
-
-/usr/bin/sync_to_harvester.py --first-boot || (
-  # in the background, initiate wpa_supplicant. We are not waiting for success
-  rfkill unblock all
-  echo "Failed, trying to get time through wired network"
-  dhclient eth0
-  set_time_from_api_net.py
-  ) || (
-  echo "Failed, trying to get time through configured wifi network"
-  pkill wpa_supplicant
-  wpa_supplicant -Dnl80211 -iwlan0 -c/etc/wpa_supplicant/wpa_supplicant.conf -B
-  # we will requests a dynamic IP from the router. also not waiting (-nw)
-  sleep 2
-  dhclient wlan0
-  set_time_from_api_net.py
-)
-
-sync
-
-# make the image read only if defined in env file
-
 
 blink 4 &
 BLINKER=$!

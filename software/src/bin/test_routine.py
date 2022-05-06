@@ -141,23 +141,9 @@ if __name__ == '__main__':
 
     # ==============================================================
 
-    logging.info("------------- TESTING DATA SYNCER -------------")
-    # # try:
-    # ds = DataSyncer(user_requested=True, periodic=False, battery_level=-1, no_files=True)
-    # ds.sync()
-    # time.sleep(2)
-    # logging.info("Time     : " + str(datetime.datetime.now()))
-    # except Exception as e:
-    #     logging.error(e)
-    logging.info(subprocess.check_output("sync_to_harvester.py --no-files --first-boot", shell=True).decode())
-    # ==============================================================
-
-    time.sleep(5)
-    # ==============================================================
-
-    # ==============================================================
-
     logging.info("------------- CAMERA TESTING AND CALIBRATION -------------")
+    import tempfile
+    tmp_image = tempfile.mktemp(suffix=".jpg")
 
     with picamera.PiCamera() as camera:
         logging.info("Now manually setting up camera zoom/focus/aperture")
@@ -181,6 +167,7 @@ if __name__ == '__main__':
             while GPIO.input(SPI_TESTING_GPIO):
                 camera.start_preview()
                 time.sleep(2)
+                camera.capture(tmp_image)
                 camera.stop_preview()
                 et = camera.exposure_speed / 1000
                 logging.info(f"Set focus and adjust aperture until exposure time is ~{SPI_REF_EXPOSURE_TIME / 1000} ms")
@@ -190,11 +177,27 @@ if __name__ == '__main__':
         finally:
             camera.stop_preview()
             GPIO.output(SPI_FLASH_GPIO, 0)
-    test_turn_off()
+
+    logging.info("------------- TESTING DATA SYNCER -------------")
+    assert os.path.isfile(tmp_image), "Did not capture any image! QR code needed to connect"
+    logging.info(subprocess.check_output(f"sync_to_harvester.py --no-files --qr-code-file {tmp_image} ", shell=True).decode())
+    os.remove(tmp_image)
+    os.system("sync")
+
+    logging.info("------------- Check time is updated -------------")
+    time.sleep(2)
+    logging.info("Time     : " + str(datetime.datetime.now()))
+    # before 2020 seems like a dummy time!
+    if time.time() < (datetime.datetime(2020,1,1,0,0) - datetime.datetime(1970,1,1)).total_seconds():
+        logging.error("Time does not seem to have been updated!!")
+        while True:
+            time.sleep(.1)
+
     # ==============================================================
 
     logging.info("------------- TESTING TURNING OFF -------------")
     time.sleep(2)
+    test_turn_off()
 # try internet connection for 30s
 # no internet = skip + warning!
 

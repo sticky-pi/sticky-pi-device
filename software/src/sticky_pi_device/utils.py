@@ -7,9 +7,8 @@ import time
 import netifaces
 import subprocess
 import re
-import fcntl
-import struct
-import socket
+
+
 
 def device_id():
     cpuserial = ""
@@ -50,81 +49,6 @@ def remove_old_files(location):
         os.remove(r)
 
 
-def set_direct_wifi_connection(persistent_dir, default_content, ping_harvester_timeout, spi_harvester_name_pattern, find_harvseter_timeout, interface="wlan0"):
-    config_file = os.path.join(persistent_dir, 'p2p_wpa_supplicant.conf')
-
-    if not os.path.exists(config_file):
-        with open(config_file, 'w') as f:
-            f.write(default_content)
-
-    os.system(f"pkill wpa_supplicant")
-    os.system(f"wpa_supplicant -i{interface}  -B -Dnl80211 -c{config_file}")
-    # os.system("wpa_supplicant -iwlan0  -B -Dnl80211 -c/etc/wpa_supplicant/p2p_wpa_supplicant.conf")
-    time.sleep(1)
-    os.system(f"wpa_cli  set device_name sticky-pi-{device_id()}")
-    os.system("wpa_cli p2p_find")
-
-    harvester_mac = find_harvester(spi_harvester_name_pattern, find_harvseter_timeout)
-    if not harvester_mac:
-        logging.warning(f"Could not find a network with name `{spi_harvester_name_pattern}'")
-    os.system(f"wpa_cli  p2p_prov_disc {harvester_mac}  pbc")
-
-    wpa_cli_output = subprocess.check_output(f"wpa_cli  p2p_connect {harvester_mac} pbc persistent join", shell=True, universal_newlines=True)
-    p2p_if_name = re.findall("'p2p.*'", wpa_cli_output)
-    assert len(p2p_if_name) == 1
-    p2p_if_name = eval(p2p_if_name[0])
-
-    start = time.time()
-    ip = None
-    while time.time() - start < ping_harvester_timeout:
-
-        if not ip:
-            if f"{p2p_if_name}" not in netifaces.interfaces():
-                logging.info(f"Waiting for {p2p_if_name}")
-                time.sleep(0.5)
-            else:
-                # we kill dhcp client if we could not get an ip
-                os.system("dhclient -x")
-                os.system(f"dhclient {p2p_if_name} -nw")
-                time.sleep(1)
-                ip = get_ip_address(f'{p2p_if_name}')
-        else:
-            go_ip = ".".join(ip.split(".")[0:3] + ["1"])
-            resp = os.system(f"ping -c 1 -W 1 {go_ip} > /dev/null 2>&1")
-            if resp == 0:
-                logging.info("Host is up!")
-                return ip
-    logging.warning("Cannot set ip or ping GO")
-    return ""
-
-
-
-def find_harvester(spi_harvester_name_pattern, find_harvester_timeout):
-    start = time.time()
-    while time.time() - start < find_harvester_timeout:
-        try:
-            peers = subprocess.check_output("wpa_cli p2p_peers", shell=True, universal_newlines=True)
-        except subprocess.CalledProcessError:
-            peers = []
-            time.sleep(0.5)
-            continue
-        peers = peers.splitlines()
-        logging.info(f"p2p peers: {peers}")
-        for p in peers:
-            device = subprocess.check_output(f"wpa_cli p2p_peer {p}", shell=True,
-                                             universal_newlines=True).splitlines()
-            if len(device) < 2:
-                continue
-            mac = device[1]
-            for line in device:
-                match = re.match(f"device_name={spi_harvester_name_pattern}", line)
-                if match:
-                    logging.info(f"Found {match.string}, mac={mac}")
-                    return mac
-    logging.warning(f"Did not find any matching network amongst {len(peers)} peers")
-    return
-
-
 def get_ip_address(ifname, version = "v4"):
     try:
         if version == "v6":
@@ -136,19 +60,6 @@ def get_ip_address(ifname, version = "v4"):
         return addr
     except KeyError:
         return
-    #
-    #
-    # ifname = bytes(ifname, "ascii")
-    # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # try:
-    #     fd = fcntl.ioctl(
-    #         s.fileno(),
-    #         0x8915,  # SIOCGIFADDR
-    #         struct.pack('256s', ifname[:15])
-    #     )
-    # except OSError as e:
-    #     logging.error(e)
-    #     return
 
 def mount_persistent_partition(label, taget):
     os.system(f"mount -L {label} {taget}")
@@ -163,25 +74,27 @@ def set_wifi(interface="wlan0"):
     os.system("rfkill unblock all")
     os.system(f"ip link set {interface} up")
 
-def set_wpa(wpa_timeout, persistent_dir, additional_config = None):
-    sys_config_file = '/etc/wpa_supplicant/wpa_supplicant.conf'
-    if additional_config is None:
-        additional_config = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
+def set_wpa(wpa_timeout, persistent_dir, additional_config = None, dhc_only=False):
 
-    logging.info(f"Restarting  wpa_supplicant.")
-    os.system(f"pkill wpa_supplicant")
+    if not dhc_only:
+        sys_config_file = '/etc/wpa_supplicant/wpa_supplicant.conf'
+        if additional_config is None:
+            additional_config = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
 
-    if os.path.exists(additional_config):
-        additional_config_cmd = f"-I{additional_config}"
-    else:
-        additional_config_cmd = ""
+        logging.info(f"Restarting  wpa_supplicant.")
+        os.system(f"pkill wpa_supplicant")
 
-    os.system(f"cat {additional_config}")
-    time.sleep(5)
+        if os.path.exists(additional_config):
+            additional_config_cmd = f"-I{additional_config}"
+        else:
+            additional_config_cmd = ""
 
-    os.system(f"wpa_supplicant -iwlan0  -B -Dnl80211 -c{sys_config_file} {additional_config_cmd}")
-    time.sleep(3)
-    logging.info(f"Restarting dhclient.")
+        time.sleep(5)
+
+        os.system(f"wpa_supplicant -iwlan0  -B -Dnl80211 -c{sys_config_file} {additional_config_cmd}")
+        time.sleep(3)
+        logging.info(f"Restarting dhclient.")
+
     os.system("dhclient -x")
     logging.info(f"Getting ip address now.")
     os.system("dhclient wlan0 -nw")
@@ -195,64 +108,82 @@ def set_wpa(wpa_timeout, persistent_dir, additional_config = None):
     return ""
 
 
-def set_wifi_from_qr(persistent_dir):
+def set_wifi_from_qr(persistent_dir, img_file = None):
+    # if img_file is set, we go for a non-persistent option.
+    # we just use the provided image path to decode the qr code and try an ad hoc connection ONCE
+    #  this connects to the harvester through a local only hotspot that is a temporary SSID/password
+
     import re
     import shutil
-    # import RPi.GPIO as GPIO  # import RPi.GPIO module
 
-    # GPIO.setmode(GPIO.BCM)
-    # GPIO.setup(spi_flash_gpio, GPIO.OUT)  # set a port/pin as an output
-    tmp_file = tempfile.mktemp(suffix=".jpg")
     try:
-        for i in range(5):
-            os.system(f"/opt/vc/bin/raspistill -o {tmp_file} -w 1296 -h 972 -vf -t 1")
-            try:
-                decoded = subprocess.check_output(f"zbarimg {tmp_file} -q", shell=True, universal_newlines=True)
-            except subprocess.CalledProcessError:
-                continue
+        logging.info(f"Looking for QR code to connect to wifi")
+        decoded = subprocess.check_output(f"zbarimg --set x-density=2 --set y-density=2  {img_file} -q", shell=True, universal_newlines=True)
 
-            m = re.match("QR-Code:WIFI:(?P<credentials>.*)", decoded)
+        m = re.match("QR-Code:WIFI:(?P<credentials>.*)", decoded)
 
-            if m:
-                creds = m.group('credentials')
-                fields = {}
-                for c in creds.split(';'):
-                    if c:
-                        try:
-                            key, val = c.split(":")
-                            fields[key] = val
-                        except ValueError:
-                            pass
-                assert "P" in fields, 'No password field, P in qr code text'
-                assert "S" in fields, 'No ssid field, S in qr code text'
-                config = tempfile.mktemp(suffix=".conf")
+        if not m:
+            logging.warning(f"Could not read QR code in {img_file}")
+            return ""
 
-                os.system(f"pkill wpa_supplicant")
-                os.system(f'echo "ctrl_interface=DIR=/var/run/wpa_supplicant" > {config}')
-                os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {config}")
-                os.system(f"wpa_supplicant -B -i wlan0 -c {config}")
-                time.sleep(2)
-                os.remove(config)
-
+        creds = m.group('credentials')
+        logging.info(f"Found qr code {creds}")
+        fields = {}
+        for c in creds.split(';'):
+            if c:
                 try:
-                    #we try to append credentials to our config AND to load it. we only keep it if we get an IP
-                    tmp_cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf.tmp')
-                    cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
-                    if not os.path.isfile(cfg_file):
-                        with open(cfg_file, 'w') as f:
-                            f.write("ctrl_interface=DIR=/var/run/wpa_supplicant\n")
+                    key, val = c.split(":")
+                    fields[key] = val
+                except ValueError:
+                    pass
+        assert "P" in fields, 'No password field, P in qr code text'
+        assert "S" in fields, 'No ssid field, S in qr code text'
 
-                    shutil.copyfile(cfg_file, tmp_cfg_file)
+        if "F" in fields and int(fields["F"]) == 1:
+            logging.info(f"Temporary local network: {fields['S']}")
+            forget = True
+        else:
+            logging.info(f"Persistent network: {fields['S']}")
+            forget = False
 
-                    os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {tmp_cfg_file}")
-                    ip = set_wpa(5, persistent_dir, tmp_cfg_file)
-                    if ip:
-                        shutil.copyfile(tmp_cfg_file, cfg_file)
-                        return ip
-                finally:
-                    os.remove(tmp_cfg_file)
+        config = tempfile.mktemp(suffix=".conf")
+        os.system(f"pkill wpa_supplicant")
+        os.system(f'echo "ctrl_interface=DIR=/var/run/wpa_supplicant" > {config}')
+        os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {config}")
+        os.system(f"wpa_supplicant -Dnl80211 -B -i wlan0 -c {config}")
+        os.remove(config)
+        time.sleep(2)
+
+        if forget:
+            ip = set_wpa(5, None, None, dhc_only=True)
+            if not ip:
+                logging.error("Trying direct connection though QR code, but failed! Not trying other methods")
+                exit(1)
+            return ip
+
+        try:
+            #we try to append credentials to our config AND to load it. we only keep it if we get an IP
+            tmp_cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf.tmp')
+            cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
+            if not os.path.isfile(cfg_file):
+                with open(cfg_file, 'w') as f:
+                    f.write("ctrl_interface=DIR=/var/run/wpa_supplicant\n")
+
+            shutil.copyfile(cfg_file, tmp_cfg_file)
+
+            os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {tmp_cfg_file}")
+            ip = set_wpa(5, persistent_dir, tmp_cfg_file)
+            if ip:
+                shutil.copyfile(tmp_cfg_file, cfg_file)
+                return ip
+        finally:
+            os.remove(tmp_cfg_file)
 
         time.sleep(1)
-    finally:
-        if os.path.isfile(tmp_file):
-            os.remove(tmp_file)
+
+    except AssertionError:
+        logging.error(f"Assertion process error {e}")
+        return ""
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Sub process error {e}")
+        return ""

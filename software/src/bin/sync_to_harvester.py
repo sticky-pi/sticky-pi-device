@@ -10,32 +10,9 @@ import tempfile
 import RPi.GPIO as GPIO  # import RPi.GPIO module
 
 
-from sticky_pi_device.utils import device_id, set_wifi, set_wpa, set_direct_wifi_connection, \
+from sticky_pi_device.utils import device_id, set_wifi, set_wpa,  \
     set_wifi_from_qr, mount_persistent_partition, unmount_persistent_partition
 from sticky_pi_device.sync_server import CustomServer
-
-# FIND_HARVESTER_TIMEOUT = 10  # s
-# PING_HARVESTER_TIMEOUT = 20  # s
-# DEFAULT_P2P_CONFIG_FILE = """
-# ctrl_interface=DIR=/var/run/wpa_supplicant
-# driver_param=use_p2p_group_interface=1
-# persistent_reconnect=1
-# device_name=DIRECT-sticky-pi
-# device_type=6-0050F204-1
-# config_methods=virtual_push_button
-# p2p_go_intent=0
-# p2p_go_ht40=1
-# country=US
-# """
-#
-
-#
-# SPI_HARVESTER_NAME_PATTERN = "spi-harvester"
-# SPI_DEVICE_SERVER_PORT = 80
-# SPI_DEVICE_SERVER_PACEMAKER_FILE = "/var/run/sticky-pi.pmk"
-# # s after which the server is considered dead/hanging
-# # we will use a pacemaker mechanism to keep it alive
-# SPI_SYNC_TIMEOUT = 120
 
 
 WPA_TIMEOUT = 8  # s
@@ -58,9 +35,6 @@ class ConfigHandler(dict):
 
     def __getattr__(self, attr):
         return self[attr]
-
-
-
 
 class Blinker(threading.Thread):
     def __init__(self, period: float, flash_gpio:int):
@@ -110,6 +84,12 @@ if __name__ == '__main__':
                       default=False,
                       action='store_true')
 
+    parser.add_option("-q", "--qr-code-file",
+                      dest="qr_code_file",
+                      help="A file containing a qrcode to describe a network to try direct, non-persistent connection",
+                      default=None,
+                      type=str)
+
     parser.add_option("-u", "--user-requested",
                       dest="user_requested",
                       help="whether the user explicitly requested sync -- as opposed to an automatic trigger",
@@ -139,18 +119,21 @@ if __name__ == '__main__':
     mount_persistent_partition(config.SPI_PERSISTENT_PARTITION_LABEL, tmp_mount)
     try:
         set_wifi()
-        ip = set_wpa(WPA_TIMEOUT, tmp_mount)
-        # for periodic backups, we cannot tolerate missing IP (no user would be there to scan the QR code)
-        if not ip and not option_dict["periodic"]:
-            blinker.set_period(0.2)
-            logging.warning("Could not connect to data harvester using wifi hotspot. Trying to register a new qr code")
-            ip = set_wifi_from_qr(tmp_mount)
-            # if not ip:
-            # logging.warning("Could not connect to data harvester using wifi hotspot. ")
-            # ip = set_direct_wifi_connection(config.SPI_IMAGE_DIR, DEFAULT_P2P_CONFIG_FILE, PING_HARVESTER_TIMEOUT,
-            #                                 config.SPI_HARVESTER_NAME_PATTERN, FIND_HARVESTER_TIMEOUT)
+
+        # try to scan image for qr code
+        # register the qr code unless it has a F:1 field (forget)
+        # this is for temporary networks (android ap)
+        # we do that only for button pushed (i.e. non-periodic)
+        if option_dict["periodic"]:
+            ip = ""
+        else:
+            logging.info("Connecting using QR code")
+            ip = set_wifi_from_qr(tmp_mount, img_file=option_dict["qr_code_file"])
+        # failed to find any IP or irrelevant as it is a periodic boot
+        if not ip:
+            ip = set_wpa(WPA_TIMEOUT, tmp_mount)
             if not ip:
-                logging.warning("Wifi failed too")
+                logging.warning("Wifi from registered net failed too")
                 exit(1)
 
         blinker.set_period(5.0)
@@ -160,8 +143,6 @@ if __name__ == '__main__':
         import contextlib
         # ensure dir exists
         os.makedirs(os.path.join(config.SPI_IMAGE_DIR, device_id()), exist_ok=True)
-
-
 
         ip_version = IPVersion.V4Only
         # ip_version = IPVersion.V6Only

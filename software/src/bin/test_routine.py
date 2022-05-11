@@ -95,7 +95,7 @@ def test_batt():
         out_sum += out
         GPIO.output(CS, True)  # /CS high
 
-    logging.info("Battery level  : " + str(out_sum/8.0))
+    logging.info("Battery level  : " + str(out_sum / 8.0))
     time.sleep(.2)
     return 0
 
@@ -143,11 +143,14 @@ if __name__ == '__main__':
 
     logging.info("------------- CAMERA TESTING AND CALIBRATION -------------")
     import tempfile
+
     tmp_image = tempfile.mktemp(suffix=".jpg")
+    no_qr_code_at_least_once = False
+    done = False
 
     with picamera.PiCamera() as camera:
         logging.info("Now manually setting up camera zoom/focus/aperture")
-        logging.info("Remove testing bridge when done")
+        logging.info("Add the QR code when done")
         time.sleep(2.0)
         camera.framerate = 10
         camera.resolution = (int(os.environ["SPI_IM_W"]), int(os.environ["SPI_IM_H"]))
@@ -161,18 +164,36 @@ if __name__ == '__main__':
             SPI_FLASH_GPIO = int(os.environ["SPI_FLASH_GPIO"])
             SPI_REF_EXPOSURE_TIME = int(os.environ["SPI_REF_EXPOSURE_TIME"])
             GPIO.setup(SPI_FLASH_GPIO, GPIO.OUT)  # set a port/pin as an output
-            SPI_TESTING_GPIO = int(os.environ["SPI_TESTING_GPIO"])
-            GPIO.setup(SPI_TESTING_GPIO, GPIO.IN)  # set a port/pin as an output
+            # SPI_TESTING_GPIO = int(os.environ["SPI_TESTING_GPIO"])
+            # GPIO.setup(SPI_TESTING_GPIO, GPIO.IN)  # set a port/pin as an output
             GPIO.output(SPI_FLASH_GPIO, 1)
-            while GPIO.input(SPI_TESTING_GPIO):
+            while not done:
                 camera.start_preview()
-                time.sleep(2)
-                camera.capture(tmp_image)
+                time.sleep(4)
+                camera.capture(tmp_image, quality = 95)
                 camera.stop_preview()
                 et = camera.exposure_speed / 1000
                 logging.info(f"Set focus and adjust aperture until exposure time is ~{SPI_REF_EXPOSURE_TIME / 1000} ms")
                 logging.info(f"Exposure time: {et} ms")
-                time.sleep(1)
+
+                try:
+
+                    proc = subprocess.run(f"zbarimg --set x-density=2 --set y-density=2  {tmp_image} -q",
+                                          shell=True,
+                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                          universal_newlines=True)
+                    decoded = proc.stdout
+                    error = proc.stderr
+                    proc.check_returncode()
+                    if not no_qr_code_at_least_once:
+                        logging.warning(
+                            "QR code cannot be the first image. Put QR code only in the end of the focus process.")
+                    else:
+                        done = True
+                except subprocess.CalledProcessError as e:
+                    logging.info("No QR code in image. Continuing...")
+                    logging.info(error)
+                    no_qr_code_at_least_once = True
 
         finally:
             camera.stop_preview()
@@ -180,15 +201,17 @@ if __name__ == '__main__':
 
     logging.info("------------- TESTING DATA SYNCER -------------")
     assert os.path.isfile(tmp_image), "Did not capture any image! QR code needed to connect"
-    logging.info(subprocess.check_output(f"sync_to_harvester.py --no-files --qr-code-file {tmp_image} ", shell=True).decode())
+    logging.info(
+        subprocess.check_output(f"sync_to_harvester.py --no-files --qr-code-file {tmp_image} ", shell=True).decode())
     os.remove(tmp_image)
     os.system("sync")
 
     logging.info("------------- Check time is updated -------------")
     time.sleep(2)
+    os.system("hwclock --hctosys")
     logging.info("Time     : " + str(datetime.datetime.now()))
     # before 2020 seems like a dummy time!
-    if time.time() < (datetime.datetime(2020,1,1,0,0) - datetime.datetime(1970,1,1)).total_seconds():
+    if time.time() < (datetime.datetime(2020, 1, 1, 0, 0) - datetime.datetime(1970, 1, 1)).total_seconds():
         logging.error("Time does not seem to have been updated!!")
         while True:
             time.sleep(.1)
@@ -196,19 +219,5 @@ if __name__ == '__main__':
     # ==============================================================
 
     logging.info("------------- TESTING TURNING OFF -------------")
-    time.sleep(2)
+    time.sleep(5)
     test_turn_off()
-# try internet connection for 30s
-# no internet = skip + warning!
-
-# echo "Date is $(date)"
-# sleep 3
-# echo "Device name is $(device_name)"
-# sleep 3
-# echo "File system:"
-# df -h
-# sleep 3
-# test dht
-# test battery level reader
-# blink flash
-# test camera

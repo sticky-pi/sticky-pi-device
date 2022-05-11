@@ -62,6 +62,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/statvfs.h>
 #include <math.h>
 
 #include "bcm_host.h"
@@ -121,8 +122,8 @@ int spi_im_w, spi_im_h, spi_im_jpeg_quality;
 int GPIO_TO_WIRING_PI_MAP[]= {30, 31, 8, 9, 7, 21, 22, 11, 10, 13, 12, 14, 26, 23, 15, 16, 27, 0, 1, 24, 28, 29, 3, 4, 5, 6, 25, 2};
 
 #define CUSTOM_EXIF_KEY "EXIF.UserComment"
-#define CUSTOM_EXIF_HEADER "ver,temp,hum,bat,lum,lat,lng,alt,lsy"
-#define CUSTOM_EXIF_FORMAT "%s,%.1f,%.1f,%i,%.2f,%.5f,%.5f,%.1f,%s"
+#define CUSTOM_EXIF_HEADER "ver,temp,hum,bat,lum,lat,lng,alt,lsy,b"
+#define CUSTOM_EXIF_FORMAT "%s,%.1f,%.1f,%i,%.2f,%.5f,%.5f,%.1f,%s,%i"
 #define CUSTOM_EXIF_TEMPLATE CUSTOM_EXIF_KEY "=" CUSTOM_EXIF_HEADER "\n" CUSTOM_EXIF_FORMAT
 
 
@@ -139,6 +140,7 @@ typedef struct
      float temp; //4
      float  hum; // 4
      int bat; // 4
+     int button; // 1 (0 or 1)
 
      float alt; //4
      double lng; // 8
@@ -790,7 +792,9 @@ static MMAL_STATUS_T  add_custom_exif_field(RASPISTILL_STATE *state){
         state->lat,
         state->lng,
         state->alt,
-        state->last_sync);
+        state->last_sync,
+        state->button
+        );
     return add_exif_tag(state, buffer);
 }
 
@@ -917,10 +921,13 @@ static void set_device_id(char *device_id){
     fclose(fp);
 
 }
-static void * set_picture_path(struct tm *timeinfo, char *picture_path){
+static void * set_picture_path(struct tm *timeinfo, char *picture_path, int temp_file){
     char device_name[8+1] = "";
     char datetime_str[32] = "";
     char time_buf[32] = "";
+
+    char root_dir[128] = "";
+
 //    memset (device_name,'\0',9);
 
    set_device_id(device_name);
@@ -937,11 +944,25 @@ static void * set_picture_path(struct tm *timeinfo, char *picture_path){
             timeinfo->tm_min,
             timeinfo->tm_sec);
 
-    snprintf(picture_path,128, "%s/%s",SPI_IMAGE_DIR, device_name);
+
+
+    if(temp_file == 1){
+        snprintf(root_dir,128, "%s", "/tmp");
+        }
+    else{
+        snprintf(root_dir,128, "%s", SPI_IMAGE_DIR);
+        }
+
+
+    snprintf(picture_path,128, "%s/%s",root_dir, device_name);
+
     if (stat(picture_path, &st) == -1){
         mkdir(picture_path, 0755);
     }
-    snprintf(picture_path,128, "%s/%s/%s.%s.jpg",SPI_IMAGE_DIR, device_name, device_name ,datetime_str);
+
+    snprintf(picture_path,128, "%s/%s/%s.%s.jpg", root_dir, device_name, device_name ,datetime_str);
+
+//    snprintf(picture_path,128, "%s/%s/%s.%s.jpg",SPI_IMAGE_DIR, device_name, device_name ,datetime_str);
 }
 
 static void logging( char * pattern, ...){
@@ -1134,7 +1155,7 @@ int main(int argc, const char **argv)
 
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    set_picture_path(timeinfo, filename);
+    set_picture_path(timeinfo, filename, 0);
     logging("Taking picture to file %s", filename);
 
     if (wiringPiSetup() == -1) {
@@ -1183,6 +1204,7 @@ int main(int argc, const char **argv)
    default_status(&state, timeinfo);
    // read battery here, before voltage drops due to camera loading?
    state.bat = battery_level;
+   state.button = was_turned_on_by_button;
 
    // Setup for sensor specific parameters
    get_sensor_defaults(CAMERA_NUM, state.camera_name);
@@ -1259,107 +1281,134 @@ int main(int argc, const char **argv)
          else
          {
 
-        FILE *output_file = NULL;
-        char *use_filename = NULL;      // Temporary filename while image being written
-        char *final_filename = NULL;    // Name that file gets once writing complete
+            FILE *output_file = NULL;
+            char *use_filename = NULL;      // Temporary filename while image being written
+            char *final_filename = NULL;    // Name that file gets once writing complete
 
-        int i=0;
-        MMAL_PARAMETER_CAMERA_SETTINGS_T settings;
+            int i=0;
+            MMAL_PARAMETER_CAMERA_SETTINGS_T settings;
 
-        // we wait for camera to warmup. meanwhile, we read DHT
-        read_dht_and_sleep(&state);
+            // we wait for camera to warmup. meanwhile, we read DHT
+            read_dht_and_sleep(&state);
 
-        calc_lum(&state, state.camera_component);
-         vcos_assert(use_filename == NULL && final_filename == NULL);
-         status = create_filenames(&final_filename, &use_filename, filename);
-         if (status  != MMAL_SUCCESS)
-         {
-            vcos_log_error("Unable to create filenames");
-            goto error;
+            calc_lum(&state, state.camera_component);
+             vcos_assert(use_filename == NULL && final_filename == NULL);
+             status = create_filenames(&final_filename, &use_filename, filename);
+             if (status  != MMAL_SUCCESS)
+             {
+                vcos_log_error("Unable to create filenames");
+                goto error;
+             }
+             // Technically it is opening the temp~ filename which will be renamed to the final filename
+
+             output_file = fopen(use_filename, "wb");
+
+             // look at space left. if less than ~50MB, we save in a tmp file
+             struct statvfs buffer;
+             statvfs(SPI_IMAGE_DIR, &buffer);
+
+             if (!output_file || buffer.f_frsize * buffer.f_bavail < 50 * 1024 * 1024)
+             {
+                // Notify user, carry on but discarding encoded output buffers
+                if(buffer.f_frsize * buffer.f_bavail < 50 * 1024 * 1024)
+                    logging("Limited space available (< 50 MB)! Using temp file", use_filename);
+                else
+                  vcos_log_error("%s: Error opening output file: %s\nTrying temporary file\n", __func__, use_filename);
+
+
+                filename[0] = '\0';
+                use_filename[0] = '\0';
+                final_filename[0] = '\0';
+
+                set_picture_path(timeinfo, filename, 1);
+                status = create_filenames(&final_filename, &use_filename, filename);
+
+                logging("Taking temporary picture to file %s", final_filename);
+
+                output_file = fopen(use_filename, "wb");
+                if (!output_file){
+                    logging("Still failing stopping now!\n");
+                    goto error;
+                    }
+             }
+
+
+              callback_data.file_handle = output_file;
+
+              add_exif_tags(&state);
+
+              // There is a possibility that shutter needs to be set each loop.
+              if (mmal_status_to_int(mmal_port_parameter_set_uint32(state.camera_component->control,
+                    MMAL_PARAMETER_SHUTTER_SPEED, state.camera_parameters.shutter_speed)) != MMAL_SUCCESS)
+                 vcos_log_error("Unable to set shutter speed");
+
+
+              // Enable the encoder output port
+              encoder_output_port->userdata = (struct MMAL_PORT_USERDATA_T *)&callback_data;
+
+
+              // Enable the encoder output port and tell it its callback function
+              status = mmal_port_enable(encoder_output_port, encoder_buffer_callback);
+
+              int num, q;
+              // Send all the buffers to the encoder output port
+              num = mmal_queue_length(state.encoder_pool->queue);
+
+
+              for (q=0; q<num; q++)
+              {
+                 MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(state.encoder_pool->queue);
+
+                 if (!buffer)
+                    vcos_log_error("Unable to get a required buffer %d from pool queue", q);
+
+                 if (mmal_port_send_buffer(encoder_output_port, buffer)!= MMAL_SUCCESS)
+                    vcos_log_error("Unable to send a buffer to encoder output port (%d)", q);
+              }
+
+
+
+              if (mmal_port_parameter_set_boolean(camera_still_port, MMAL_PARAMETER_CAPTURE, 1) != MMAL_SUCCESS)
+              {
+                 vcos_log_error("%s: Failed to start capture", __func__);
+              }
+              else
+              {
+                 // Wait for capture to complete
+                 // For some reason using vcos_semaphore_wait_timeout sometimes returns immediately with bad parameter error
+                 // even though it appears to be all correct, so reverting to untimed one until figure out why its erratic
+                 vcos_semaphore_wait(&callback_data.complete_semaphore);
+              }
+
+              // Ensure we don't die if get callback with no open file
+              callback_data.file_handle = NULL;
+
+              if (output_file != stdout)
+              {
+                 rename_file(&state, output_file, final_filename, use_filename);
+              }
+              else
+              {
+                 fflush(output_file);
+              }
+              // Disable encoder output port
+              status = mmal_port_disable(encoder_output_port);
+
+
+               if (use_filename)
+               {
+                  free(use_filename);
+                  use_filename = NULL;
+               }
+               if (final_filename)
+               {
+                  free(final_filename);
+                  final_filename = NULL;
+               }
+                vcos_semaphore_delete(&callback_data.complete_semaphore);
          }
-         // Technically it is opening the temp~ filename which will be renamed to the final filename
-
-         output_file = fopen(use_filename, "wb");
-
-         if (!output_file)
-         {
-            // Notify user, carry on but discarding encoded output buffers
-            vcos_log_error("%s: Error opening output file: %s\nNo output file will be generated\n", __func__, use_filename);
-         }
-
-          callback_data.file_handle = output_file;
-
-          add_exif_tags(&state);
-
-          // There is a possibility that shutter needs to be set each loop.
-          if (mmal_status_to_int(mmal_port_parameter_set_uint32(state.camera_component->control, MMAL_PARAMETER_SHUTTER_SPEED, state.camera_parameters.shutter_speed)) != MMAL_SUCCESS)
-             vcos_log_error("Unable to set shutter speed");
 
 
-          // Enable the encoder output port
-          encoder_output_port->userdata = (struct MMAL_PORT_USERDATA_T *)&callback_data;
-
-
-          // Enable the encoder output port and tell it its callback function
-          status = mmal_port_enable(encoder_output_port, encoder_buffer_callback);
-
-          int num, q;
-          // Send all the buffers to the encoder output port
-          num = mmal_queue_length(state.encoder_pool->queue);
-
-
-          for (q=0; q<num; q++)
-          {
-             MMAL_BUFFER_HEADER_T *buffer = mmal_queue_get(state.encoder_pool->queue);
-
-             if (!buffer)
-                vcos_log_error("Unable to get a required buffer %d from pool queue", q);
-
-             if (mmal_port_send_buffer(encoder_output_port, buffer)!= MMAL_SUCCESS)
-                vcos_log_error("Unable to send a buffer to encoder output port (%d)", q);
-          }
-
-
-
-          if (mmal_port_parameter_set_boolean(camera_still_port, MMAL_PARAMETER_CAPTURE, 1) != MMAL_SUCCESS)
-          {
-             vcos_log_error("%s: Failed to start capture", __func__);
-          }
-          else
-          {
-             // Wait for capture to complete
-             // For some reason using vcos_semaphore_wait_timeout sometimes returns immediately with bad parameter error
-             // even though it appears to be all correct, so reverting to untimed one until figure out why its erratic
-             vcos_semaphore_wait(&callback_data.complete_semaphore);
-          }
-
-          // Ensure we don't die if get callback with no open file
-          callback_data.file_handle = NULL;
-
-          if (output_file != stdout)
-          {
-             rename_file(&state, output_file, final_filename, use_filename);
-          }
-          else
-          {
-             fflush(output_file);
-          }
-          // Disable encoder output port
-          status = mmal_port_disable(encoder_output_port);
-
-
-           if (use_filename)
-           {
-              free(use_filename);
-              use_filename = NULL;
-           }
-           if (final_filename)
-           {
-              free(final_filename);
-              final_filename = NULL;
-           }
-            vcos_semaphore_delete(&callback_data.complete_semaphore);
-         }
       }
       else
       {
@@ -1417,7 +1466,7 @@ error:
         logging("Not syncing");
         }
 
-    sprintf(command_buffer, "%s -b %i %s 2>&1", "sync_to_harvester.py", state.bat, flag);
+    sprintf(command_buffer, "%s -b %i %s -q %s 2>&1", "sync_to_harvester.py", state.bat, flag, filename);
 
     if(strlen(flag) >0)
         system(command_buffer);
@@ -1428,7 +1477,6 @@ error:
     int off_pin = GPIO_TO_WIRING_PI_MAP[spi_off_gpio];
     pinMode(off_pin, OUTPUT);
     digitalWrite(off_pin, HIGH);
-
     return exit_code;
 }
 

@@ -5,6 +5,7 @@ import time
 import os
 import logging
 import shutil
+import errno
 
 from subprocess import Popen, PIPE
 from threading import Thread
@@ -103,8 +104,6 @@ class S(BaseHTTPRequestHandler):
             path = os.path.relpath(self.path, "/static")
             self._get_static_file(path)
         else:
-
-
             try:
                 method = self._get_methods[self.path]
 
@@ -170,20 +169,29 @@ class S(BaseHTTPRequestHandler):
         out = {}
         if not os.path.isdir(os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id)):
             return out
+        logging.info("Listing images")
 
-        for g in glob.glob(os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id, '*.jpg')):
+        for i, g in enumerate(glob.glob(os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id, '*.jpg'))):
+            if i % 500 == 0:
+                self._touch_pacemaker()
+                logging.info(f"Listed {i} images ...")
+
             s = os.path.relpath(g, os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id))
             datetime_field = s.split(".")[1]
             out[datetime_field] = img_file_hash(g)
+        logging.info("Img listed returning!")
         return out
 
     def _keep_alive(self, info):
         if self._dev_id != info["device_id"]:
             return 400, "Wrong device id"
 
+        self._touch_pacemaker()
+        return 200, ""
+
+    def _touch_pacemaker(self):
         with open(self._config.SPI_DEVICE_SERVER_PACEMAKER_FILE, 'w') as f:
             f.write("")
-        return 200, ""
 
     def _metadata(self, meta):
         time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(meta["datetime"]))
@@ -196,15 +204,18 @@ class S(BaseHTTPRequestHandler):
                 logging.error(f"Cannot set localtime to {time_str}")
         else:
             logging.info("Mock device, not setting RTC")
+
         path = os.path.join(self._config.SPI_IMAGE_DIR, self._config.SPI_METADATA_FILENAME)
         tmp_path = path + ".tmp"
+        try:
+            with open(tmp_path , 'w') as f:
+                f.write(json.dumps(meta))
 
+            os.rename(tmp_path, path)
 
-        with open(tmp_path , 'w') as f:
-            f.write(json.dumps(meta))
-
-        os.rename(tmp_path, path)
-
+        except OSError as e:
+            if e.errno == errno.ENOSPC:
+                logging.error("No space left on device cannot write metadata!")
         return 200, self._status()
 
     def _remove_old_files(self):

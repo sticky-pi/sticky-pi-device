@@ -108,6 +108,23 @@ def set_wpa(wpa_timeout, persistent_dir, additional_config = None, dhc_only=Fals
     return ""
 
 
+def is_ssid_in_wpa_conf(ssid, conf_file):
+    all_ssids = set()
+    try:
+        with open(conf_file, "r") as f:
+            for s in f:
+                # print(s)
+                m = re.match('\s*ssid="(.*)"$', s)
+                if m:
+                    if len(m.groups()) == 1:
+                        all_ssids.add(m.groups()[0])
+    except Exception as e:
+        logging.error(e)
+
+    return ssid in all_ssids
+
+
+
 def set_wifi_from_qr(persistent_dir, img_file = None):
     # if img_file is set, we go for a non-persistent option.
     # we just use the provided image path to decode the qr code and try an ad hoc connection ONCE
@@ -171,7 +188,14 @@ def set_wifi_from_qr(persistent_dir, img_file = None):
 
             shutil.copyfile(cfg_file, tmp_cfg_file)
 
+            # looks if same ssid in the config file. if ssid exist we don't append any data and return no ip
+            # the parent script then falls back on persistent networks
+            if is_ssid_in_wpa_conf(fields['S'], cfg_file):
+                logging.error(f"SSID `{fields['S']}` already registered. This would be a duplicate")
+                return ""
+
             os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {tmp_cfg_file}")
+
             ip = set_wpa(5, persistent_dir, tmp_cfg_file)
             if ip:
                 shutil.copyfile(tmp_cfg_file, cfg_file)

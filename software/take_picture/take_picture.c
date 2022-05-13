@@ -122,7 +122,8 @@ int spi_im_w, spi_im_h, spi_im_jpeg_quality;
 int GPIO_TO_WIRING_PI_MAP[]= {30, 31, 8, 9, 7, 21, 22, 11, 10, 13, 12, 14, 26, 23, 15, 16, 27, 0, 1, 24, 28, 29, 3, 4, 5, 6, 25, 2};
 
 #define CUSTOM_EXIF_KEY "EXIF.UserComment"
-#define CUSTOM_EXIF_HEADER "ver,temp,hum,bat,lum,lat,lng,alt,lsy,b"
+//#define CUSTOM_EXIF_HEADER "ver,temp,hum,bat,lum,lat,lng,alt,last-sync,b"
+#define CUSTOM_EXIF_HEADER "v,T,H,B,L,lat,lng,a,l,b"
 #define CUSTOM_EXIF_FORMAT "%s,%.1f,%.1f,%i,%.2f,%.5f,%.5f,%.1f,%s,%i"
 #define CUSTOM_EXIF_TEMPLATE CUSTOM_EXIF_KEY "=" CUSTOM_EXIF_HEADER "\n" CUSTOM_EXIF_FORMAT
 
@@ -1152,7 +1153,6 @@ int main(int argc, const char **argv)
     char filename[128] = "";
     time_t rawtime;
     struct tm * timeinfo;
-
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     set_picture_path(timeinfo, filename, 0);

@@ -38,9 +38,21 @@ else
   fi
 
   # our custom c program
-  take_picture | tee -a  ${LOG_FILE}
+  take_picture  || error="true" | tee -a  ${LOG_FILE}
+
+  if [ -z ${error+x} ]; then
+     echo "Catastrophic failure taking picture. Trying to turn off from bash" | tee -a  ${LOG_FILE}
+     sleep 5
+     sync
+     gpio -g mode ${SPI_OFF_GPIO} out
+     gpio -g write ${SPI_OFF_GPIO} 1
+  fi
 fi
+
+
+# falls back on bash
 bash
+
 #
 # # sudo rsync -rvP  --copy-links ./os_stub/  /run/media/quentin/a33f80ed-ac88-44e8-a129-d5551a4a58a3/ && sudo rsync  -r /run/media/quentin/a33f80ed-ac88-44e8-a129-d5551a4a58a3/tmp/ /run/media/quentin/a33f80ed-ac88-44e8-a129-d5551a4a58a3/opt/tmp/  && sudo systemd-nspawn  --timezone=off --directory  /run/media/quentin/a33f80ed-ac88-44e8-a129-d5551a4a58a3/ bash -c 'cd /opt/tmp/sticky_pi/take_picture &&   ./build.sh'
 

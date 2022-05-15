@@ -1,4 +1,4 @@
-# Hardware  and Software for the [Sticky Pi] devices(https://sticky-pi.github.io)
+# Hardware  and Software for the [Sticky Pi](https://sticky-pi.github.io) devices
 
 **This readme is intended for contributors and developers**. 
 Instructions to assemble Sticky Pis are available on [our documentation](https://doc.sticky-pi.com/hardware.html)

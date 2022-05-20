@@ -122,6 +122,7 @@ int spi_im_w, spi_im_h, spi_im_jpeg_quality;
 int GPIO_TO_WIRING_PI_MAP[]= {30, 31, 8, 9, 7, 21, 22, 11, 10, 13, 12, 14, 26, 23, 15, 16, 27, 0, 1, 24, 28, 29, 3, 4, 5, 6, 25, 2};
 
 #define CUSTOM_EXIF_KEY "EXIF.UserComment"
+
 //#define CUSTOM_EXIF_HEADER "ver,temp,hum,bat,lum,lat,lng,alt,last-sync,b"
 #define CUSTOM_EXIF_HEADER "v,T,H,B,L,lat,lng,a,l,b"
 #define CUSTOM_EXIF_FORMAT "%s,%.1f,%.1f,%i,%.2f,%.5f,%.5f,%.1f,%s,%i"
@@ -202,7 +203,7 @@ static void default_status(RASPISTILL_STATE *state, struct tm *timeinfo)
     state->lat = 0.0;
     state->lng = 0.0;
     state->alt = 0.0;
-    strcpy(state->last_sync, "2000-01-01 00:00:00");
+    strncpy(state->last_sync, "2000-01-01 00:00:00", 20);
 
    state->timeinfo = timeinfo;
    state->linkname = NULL;
@@ -218,12 +219,8 @@ static void default_status(RASPISTILL_STATE *state, struct tm *timeinfo)
    state->preview_parameters.preview_component = NULL;
    state->preview_parameters.display_num = -1;
 
-   //fixme zoom defaults!
-
 
    raspicamcontrol_set_defaults(&state->camera_parameters);
-
-
    state->camera_parameters.roi.x = atoi(SPI_ZOOM_X);
    state->camera_parameters.roi.y = atoi(SPI_ZOOM_Y);
    state->camera_parameters.roi.w = atoi(SPI_ZOOM_W);
@@ -775,7 +772,7 @@ static MMAL_STATUS_T  add_custom_exif_field(RASPISTILL_STATE *state){
                   state->alt = atof(value_string);
                 }
                 else if (strcmp(key_string, "datetime") == 0){
-                    strcpy(state->last_sync, value_string);
+                    strncpy(state->last_sync, value_string, 20);
                 }
                 else{
                     logging_error("Unexpected token in metadata: `%s:%s'", key_string, value_string);
@@ -922,8 +919,10 @@ static void set_device_id(char *device_id){
     fclose(fp);
 
 }
+
 static void * set_picture_path(struct tm *timeinfo, char *picture_path, int temp_file){
     char device_name[8+1] = "";
+    char day_str[4+1+2+1+2 +1] = "";
     char datetime_str[32] = "";
     char time_buf[32] = "";
 
@@ -936,11 +935,16 @@ static void * set_picture_path(struct tm *timeinfo, char *picture_path, int temp
         logging_error("Cannot set device name!");
    }
 
-   snprintf(datetime_str, sizeof(time_buf),
-            "%04d-%02d-%02d_%02d-%02d-%02d",
+   snprintf(day_str, sizeof(day_str),
+            "%04d-%02d-%02d",
             timeinfo->tm_year+1900,
             timeinfo->tm_mon+1,
-            timeinfo->tm_mday,
+            timeinfo->tm_mday);
+
+
+   snprintf(datetime_str, sizeof(datetime_str),
+            "%s_%02d-%02d-%02d",
+            day_str,
             timeinfo->tm_hour,
             timeinfo->tm_min,
             timeinfo->tm_sec);
@@ -954,20 +958,37 @@ static void * set_picture_path(struct tm *timeinfo, char *picture_path, int temp
         snprintf(root_dir,128, "%s", SPI_IMAGE_DIR);
         }
 
-
-    snprintf(picture_path,128, "%s/%s",root_dir, device_name);
-
+    snprintf(picture_path, 128, "%s/%s",root_dir, device_name);
     if (stat(picture_path, &st) == -1){
+        logging("Creating %s", picture_path);
         mkdir(picture_path, 0755);
     }
 
-    snprintf(picture_path,128, "%s/%s/%s.%s.jpg", root_dir, device_name, device_name ,datetime_str);
+    snprintf(picture_path, 128, "%s/%s/%s",root_dir, device_name, day_str);
+    if (stat(picture_path, &st) == -1){
+        logging("Creating %s", picture_path);
+        mkdir(picture_path, 0755);
+    }
 
-//    snprintf(picture_path,128, "%s/%s/%s.%s.jpg",SPI_IMAGE_DIR, device_name, device_name ,datetime_str);
+
+    snprintf(picture_path, 128, "%s/%s/%s/%s.%s.jpg", root_dir, device_name, day_str, device_name ,datetime_str);
 }
 
+
+static void logging_debug( char * pattern, ...){
+    return;
+   printf("DEBUG:  ");
+   va_list args;
+    va_start(args, pattern);
+    vprintf(pattern, args);
+    va_end(args);
+    printf("\n");
+    fflush(stdout);
+}
+
+
 static void logging( char * pattern, ...){
-    printf("INFO:  ");
+   printf("INFO:  ");
    va_list args;
     va_start(args, pattern);
     vprintf(pattern, args);
@@ -993,29 +1014,41 @@ static void logging_error( char * pattern, ...){
 
 static void read_dht_and_sleep(RASPISTILL_STATE * state){
 
+    logging_debug("DHT 1");
     DHT_DATA dht_data = {-300.0, -1.0};
+
     int status;
     struct timeval t0, t1, delta_t;
+    logging_debug("DHT 2");
     gettimeofday(&t0, NULL);
-    status = dht_read_data(&dht_data, 0);
+
+    int spi_dht_gpio = atoi(SPI_DHT_GPIO);
+    int dht_pin = GPIO_TO_WIRING_PI_MAP[spi_dht_gpio];
+    logging_debug("DHT 3");
+    status = dht_read_data(&dht_data, dht_pin ,0);
+
+
     gettimeofday(&t1, NULL);
+    logging_debug("DHT 4");
+
     timersub(&t1, &t0, &delta_t);
 
+    logging_debug("DHT 5");
     int time_to_sleep = CAMERA_SETTLE_TIME  - (unsigned long) (delta_t.tv_sec * 1000 + delta_t.tv_usec / 1000) ;
 
     // in case of weird overflow ... maybe overly defensive, but we really don't want to sleep forever
     if (time_to_sleep > CAMERA_SETTLE_TIME){
         time_to_sleep = CAMERA_SETTLE_TIME;
         }
-//    if (status == 0){
-//        logging("T, H = %02f, %02f", dht_data.temp, dht_data.hum);
-//        }
+    logging_debug("DHT 6");
     if(status != 0){
         logging_error("Failed to read DHT");
     }
+    logging_debug("DHT 7");
     if(time_to_sleep >0){
         vcos_sleep(time_to_sleep);
         }
+    logging_debug("DHT 8");
     state->temp = dht_data.temp;
     state->hum = dht_data.hum;
 }
@@ -1035,12 +1068,12 @@ int is_manual_on_gpio_up(){
     }
 
 int must_try_to_sync() {
-    char path[64];
-    char touch_command[64];
+    char path[128];
+    char touch_command[128];
     time_t last_run_time, now;
     struct stat attr;
 
-    sprintf(path, "%s/%s", SPI_IMAGE_DIR, SPI_METADATA_FILENAME);
+    snprintf(path, 128, "%s/%s", SPI_IMAGE_DIR, SPI_METADATA_FILENAME);
 
     if(stat(path, &attr) == 0){
         last_run_time = attr.st_mtime;
@@ -1053,7 +1086,7 @@ int must_try_to_sync() {
         fclose(fp);
     }
 
-    sprintf(touch_command, "touch %s", path);
+    snprintf(touch_command, 128, "touch %s", path);
     system(touch_command);
 
     // to ensure we have no gap in time, time is only read from our metadata timetsamp file
@@ -1070,8 +1103,6 @@ int must_try_to_sync() {
 }
 
 
-
-
 int read_battery_level(){
 // translated from https://stackoverflow.com/questions/24378430/reading-data-out-of-an-adc-mcp3001-with-python-spi works
     int gpio_11 = GPIO_TO_WIRING_PI_MAP[11]; //clk
@@ -1084,6 +1115,7 @@ int read_battery_level(){
     int input_val;
     int oversampling = 8;
     float sleep_dur = 0.005;
+
     pinMode(gpio_11, OUTPUT);
     pinMode(gpio_8, OUTPUT);
     pinMode(gpio_9, INPUT);
@@ -1158,24 +1190,31 @@ int main(int argc, const char **argv)
     set_picture_path(timeinfo, filename, 0);
     logging("Taking picture to file %s", filename);
 
+    logging_debug("DEBUG 1");
+
     if (wiringPiSetup() == -1) {
         logging_error("Failed to initialize wiringPi\n");
 	}
+
     else if (is_test_gpio_up()){
         logging("Testing bridge is on, entering testing mode");
         system("test_routine.py");
         logging("Testing done. staying alive");
         return EX_OK;
     }
+
     int battery_level = read_battery_level();
+    logging_debug("DEBUG 2");
 
     int was_turned_on_by_button = is_manual_on_gpio_up();
+    logging_debug("DEBUG 3");
     int periodic_sync_attempt = must_try_to_sync();
+    logging_debug("DEBUG 4");
     // highest priority for this program.
     // maybe helps with time sensitive operations such as reading
     // sensors at the software level
    piHiPri(99);
-
+    logging_debug("DEBUG 5");
    // Our main data storage vessel..
    RASPISTILL_STATE state;
 
@@ -1188,27 +1227,31 @@ int main(int argc, const char **argv)
    MMAL_PORT_T *preview_input_port = NULL;
    MMAL_PORT_T *encoder_input_port = NULL;
    MMAL_PORT_T *encoder_output_port = NULL;
-
    bcm_host_init();
+   logging_debug("DEBUG 6");
 
    // Register our application with the logging system
    vcos_log_register("RaspiStill", VCOS_LOG_CATEGORY);
-
+    logging_debug("DEBUG 7");
    signal(SIGINT, default_signal_handler);
+    logging_debug("DEBUG 8");
 
    // Disable USR1 and USR2 for the moment - may be reenabled if go in to signal capture mode
    signal(SIGUSR1, SIG_IGN);
+   logging_debug("DEBUG 9");
    signal(SIGUSR2, SIG_IGN);
+   logging_debug("DEBUG 10");
 
    set_app_name(argv[0]);
    default_status(&state, timeinfo);
+   logging_debug("DEBUG 11");
    // read battery here, before voltage drops due to camera loading?
    state.bat = battery_level;
    state.button = was_turned_on_by_button;
 
    // Setup for sensor specific parameters
    get_sensor_defaults(CAMERA_NUM, state.camera_name);
-
+    logging_debug("DEBUG 12");
 
    // OK, we have a nice set of parameters. Now set up our components
    // We have three components. Camera, Preview and encoder.
@@ -1289,16 +1332,23 @@ int main(int argc, const char **argv)
             MMAL_PARAMETER_CAMERA_SETTINGS_T settings;
 
             // we wait for camera to warmup. meanwhile, we read DHT
+            logging_debug("DEBUG 12");
             read_dht_and_sleep(&state);
 
+            logging_debug("DEBUG 13");
+
             calc_lum(&state, state.camera_component);
+            logging_debug("DEBUG 14");
              vcos_assert(use_filename == NULL && final_filename == NULL);
              status = create_filenames(&final_filename, &use_filename, filename);
+
              if (status  != MMAL_SUCCESS)
              {
                 vcos_log_error("Unable to create filenames");
                 goto error;
              }
+
+
              // Technically it is opening the temp~ filename which will be renamed to the final filename
 
              output_file = fopen(use_filename, "wb");
@@ -1455,6 +1505,17 @@ error:
 
     if(was_turned_on_by_button){
         logging("Device manually turned on");
+        char qr_filename_buffer[128] = "/tmp/qr.jpg";
+
+        char command_buffer[256] = "";
+        snprintf(command_buffer, 256,
+                                "/opt/vc/bin/raspistill -t 1000 -h %i -w  %i --quality 100  --sharpness 75 --contrast 75 --saturation -100  --roi \"0.1, 0.1, 0.8, 0.8\" -o %s",
+                                atoi(SPI_IM_H) / 2,
+                                atoi(SPI_IM_W) / 2,
+                                qr_filename_buffer);
+        logging("Running `%s`", command_buffer);
+        system(command_buffer);
+        strncpy(filename, qr_filename_buffer, 128);
         strcpy(flag,"-u");
     }
     else if(periodic_sync_attempt){

@@ -43,6 +43,9 @@ class ConfigHandler(dict):
 
 def img_file_hash(path):
     stats = os.stat(path)
+    out = stats.st_size
+    if out == 0:
+        return None
     return str(stats.st_size)
 
 
@@ -64,6 +67,7 @@ class S(BaseHTTPRequestHandler):
             self._dev_id = device_id()
 
         self._img_dir = os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id)
+
         super(S, self).__init__(request, client_address, server)
 
     def _set_headers(self, resp=200, type="application/json"):
@@ -79,11 +83,13 @@ class S(BaseHTTPRequestHandler):
         return content.encode("utf8")  # NOTE: must return a bytes object!
 
     def _get_static_file(self, path):
-
-        file = os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id, path)
+        file = os.path.join(self._config.SPI_IMAGE_DIR, path)
+        # logging.error(self._config.SPI_IMAGE_DIR)
+        logging.error(file)
         if not os.path.exists(file):
             self._set_headers(400)
-            self.wfile.write(self._json(f"No such file {path}"))
+            self.wfile.write(self._json(f"No such file {file}"))
+            logging.error(f"No such file {file}")
         else:
             size = os.path.getsize(file)
             with open(file, 'rb') as f:
@@ -91,7 +97,7 @@ class S(BaseHTTPRequestHandler):
                 self.send_header("Accept-Ranges", "bytes")
                 self.send_header("Content-Disposition", "attachment")
                 self.send_header("Content-Length", str(size))
-                self.send_header("Content-type", "image/jpg")
+                self.send_header("Content-type", "image/jpeg")
                 self.end_headers()
                 shutil.copyfileobj(f, self.wfile)
 
@@ -99,6 +105,7 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self):
 
         if self.path.startswith("/static"):
+
             # todo, prevent getting ../../...
             # i.e. secure path
             path = os.path.relpath(self.path, "/static")
@@ -171,14 +178,19 @@ class S(BaseHTTPRequestHandler):
             return out
         logging.info("Listing images")
 
-        for i, g in enumerate(glob.glob(os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id, '*.jpg'))):
-            if i % 500 == 0:
-                self._touch_pacemaker()
-                logging.info(f"Listed {i} images ...")
+        for h in glob.glob(os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id, "*")):
+            if not os.path.isdir(h):
+                continue
+            for g in glob.glob(os.path.join(h, '*.jpg')):
+                if len(out) % 500 == 0:
+                    self._touch_pacemaker()
+                    logging.info(f"Listed {len(out)} images ...")
+                s = os.path.basename(g)
+                datetime_field = s.split(".")[1]
+                my_hash = img_file_hash(g)
+                if my_hash:
+                    out[datetime_field] = my_hash
 
-            s = os.path.relpath(g, os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id))
-            datetime_field = s.split(".")[1]
-            out[datetime_field] = img_file_hash(g)
         logging.info("Img listed returning!")
         return out
 
@@ -291,3 +303,4 @@ class CustomServer(Thread):
     def stop(self):
         logging.info("Shutting down server")
         self._httpd.shutdown()
+

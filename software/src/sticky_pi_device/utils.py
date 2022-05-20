@@ -135,7 +135,7 @@ def set_wifi_from_qr(persistent_dir, img_file = None):
 
     try:
         logging.info(f"Looking for QR code to connect to wifi")
-        decoded = subprocess.check_output(f"zbarimg --set x-density=2 --set y-density=2  {img_file} -q", shell=True, universal_newlines=True)
+        decoded = subprocess.check_output(f"zbarimg  --set *.disable --set qrcode.enable  --set x-density=2 --set y-density=2  {img_file} -q", shell=True, universal_newlines=True)
 
         m = re.match("QR-Code:WIFI:(?P<credentials>.*)", decoded)
 

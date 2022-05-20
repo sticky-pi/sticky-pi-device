@@ -38,10 +38,10 @@ else
   fi
 
   # our custom c program
-  take_picture  || error="true" | tee -a  ${LOG_FILE}
+  (take_picture  2>&1 )  | tee -a  ${LOG_FILE}
 
-  if [ -z ${error+x} ]; then
-     echo "Catastrophic failure taking picture. Trying to turn off from bash" | tee -a  ${LOG_FILE}
+  if [ ${PIPESTATUS[0]} -ne 0 ]; then
+     echo "$(date +"%Y-%m-%d_%H-%M-%S"): Catastrophic failure taking picture. Trying to turn off from bash" | tee -a  ${LOG_FILE}
      sleep 5
      sync
      gpio -g mode ${SPI_OFF_GPIO} out

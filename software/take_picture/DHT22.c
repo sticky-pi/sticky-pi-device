@@ -1,5 +1,3 @@
-
-
 #include <wiringPi.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,34 +9,29 @@
 #define MAX_RETRIES 6
 #define WAIT_BETWEEN_RETRIES 250 //ms
 
-// FIXME
-// why is that a global variable?
-int spi_dht_gpio;
 
-// recurse until valid read
-int dht_read_data(DHT_DATA * dht_data, int retry) {
 
-    spi_dht_gpio = atoi(SPI_DHT_GPIO);
 
-    int dht_pin = GPIO_TO_WIRING_PI_MAP[spi_dht_gpio];
+
+int dht_read_data(DHT_DATA * dht_data, int dht_pin, int retry) {
 
     int data[5] = { 0, 0, 0, 0, 0 };
+
 	uint8_t laststate = HIGH;
 	uint8_t counter	= 0;
 	uint8_t j = 0;
 	uint8_t i;
 
 
-	data[0] = data[1] = data[2] = data[3] = data[4] = 0;
-
-	/* pull pin down for 18 milliseconds */
-	pinMode(dht_pin, OUTPUT);
+    pinMode(dht_pin, OUTPUT);
+    digitalWrite(dht_pin, HIGH);
 	digitalWrite(dht_pin, LOW);
-	delay(18);
+
+	/* pull pin down for 2 milliseconds */
+	delayMicroseconds( 2000);
 
 	/* prepare to read the pin */
 	pinMode(dht_pin, INPUT);
-
 	/* detect change and read data */
 	for ( i = 0; i < MAX_TIMINGS; i++ ) {
 		counter = 0;
@@ -57,6 +50,16 @@ int dht_read_data(DHT_DATA * dht_data, int retry) {
 		/* ignore first 3 transitions */
 		if ( (i >= 4) && (i % 2 == 0) ) {
 			/* shove each bit into the storage bytes */
+            if(j/8 > 4){
+                if(retry< MAX_RETRIES){
+                    delay(WAIT_BETWEEN_RETRIES);
+                    return dht_read_data(dht_data, dht_pin, retry+1);
+                    }
+
+                else {
+                    return 1; // NOK
+                }
+            }
 			data[j / 8] <<= 1;
 			if ( counter > 16 )
 				data[j / 8] |= 1;
@@ -83,12 +86,15 @@ int dht_read_data(DHT_DATA * dht_data, int retry) {
 		dht_data->temp = c;
 		dht_data->hum = h;
 
+
 		return 0; // OK
 	}
+
 	else if(retry< MAX_RETRIES){
 	    delay(WAIT_BETWEEN_RETRIES);
-	    return dht_read_data(dht_data, retry+1);
+	    return dht_read_data(dht_data, dht_pin, retry+1);
 	    }
+
 	else {
 		return 1; // NOK
 	}

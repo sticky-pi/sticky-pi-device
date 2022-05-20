@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
                 try:
 
-                    proc = subprocess.run(f"zbarimg --set x-density=2 --set y-density=2  {tmp_image} -q",
+                    proc = subprocess.run(f"zbarimg  --set *.disable --set qrcode.enable  --set x-density=2 --set y-density=2  {tmp_image} -q",
                                           shell=True,
                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                           universal_newlines=True)

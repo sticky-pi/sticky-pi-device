@@ -1509,7 +1509,7 @@ error:
 
         char command_buffer[256] = "";
         snprintf(command_buffer, 256,
-                                "/opt/vc/bin/raspistill -t 1000 -h %i -w  %i --quality 100  --sharpness 75 --contrast 75 --saturation -100  --roi \"0.1, 0.1, 0.8, 0.8\" -o %s",
+                                "/opt/vc/bin/raspistill -t 1000 -h %i -w  %i --quality 100  --sharpness -50 --contrast 75 --saturation -100  --roi \"0.1, 0.1, 0.8, 0.8\" -o %s",
                                 atoi(SPI_IM_H) / 2,
                                 atoi(SPI_IM_W) / 2,
                                 qr_filename_buffer);

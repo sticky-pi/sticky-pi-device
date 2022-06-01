@@ -120,18 +120,22 @@ if __name__ == '__main__':
     try:
         set_wifi()
 
+        ip = None
+        
+        if option_dict["qr_code_file"] is None:
+            logging.info("Trying to connect to pre-paired networks")
+            ip = set_wpa(WPA_TIMEOUT, tmp_mount)
+
         # try to scan image for qr code
         # register the qr code unless it has a F:1 field (forget)
         # this is for temporary networks (android ap)
         # we do that only for button pushed (i.e. non-periodic)
-        if option_dict["periodic"]:
+        if not ip and  not option_dict["periodic"]:
             ip = ""
-        else:
             logging.info("Connecting using QR code")
             ip = set_wifi_from_qr(tmp_mount, img_file=option_dict["qr_code_file"])
         # failed to find any IP or irrelevant as it is a periodic boot
         if not ip:
-            ip = set_wpa(WPA_TIMEOUT, tmp_mount)
             if not ip:
                 logging.warning("Wifi from registered net failed too")
                 exit(1)

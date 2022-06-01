@@ -74,20 +74,23 @@ def set_wifi(interface="wlan0"):
     os.system("rfkill unblock all")
     os.system(f"ip link set {interface} up")
 
-def set_wpa(wpa_timeout, persistent_dir, additional_config = None, dhc_only=False):
+def set_wpa(wpa_timeout, persistent_dir, additional_configs = None, dhc_only=False):
 
     if not dhc_only:
         sys_config_file = '/etc/wpa_supplicant/wpa_supplicant.conf'
-        if additional_config is None:
-            additional_config = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
+
+        if additional_configs is None:
+            additional_configs = [f for f in sorted(glob.glob(os.path.join(persistent_dir, '*.conf')))]
 
         logging.info(f"Restarting  wpa_supplicant.")
         os.system(f"pkill wpa_supplicant")
 
-        if os.path.exists(additional_config):
-            additional_config_cmd = f"-I{additional_config}"
-        else:
-            additional_config_cmd = ""
+        additional_config_cmd = ""
+        for conf in additional_configs:
+            if os.path.exists(conf):
+                additional_config_cmd += f" -I{conf}"
+            else:
+                logging.warning(f"no such file {conf}")
 
         time.sleep(5)
 
@@ -108,20 +111,20 @@ def set_wpa(wpa_timeout, persistent_dir, additional_config = None, dhc_only=Fals
     return ""
 
 
-def is_ssid_in_wpa_conf(ssid, conf_file):
-    all_ssids = set()
-    try:
-        with open(conf_file, "r") as f:
-            for s in f:
-                # print(s)
-                m = re.match('\s*ssid="(.*)"$', s)
-                if m:
-                    if len(m.groups()) == 1:
-                        all_ssids.add(m.groups()[0])
-    except Exception as e:
-        logging.error(e)
-
-    return ssid in all_ssids
+# def is_ssid_in_wpa_conf(ssid, conf_file):
+#     all_ssids = set()
+#     try:
+#         with open(conf_file, "r") as f:
+#             for s in f:
+#                 # print(s)
+#                 m = re.match('\s*ssid="(.*)"$', s)
+#                 if m:
+#                     if len(m.groups()) == 1:
+#                         all_ssids.add(m.groups()[0])
+#     except Exception as e:
+#         logging.error(e)
+#
+#     return ssid in all_ssids
 
 
 
@@ -134,6 +137,14 @@ def set_wifi_from_qr(persistent_dir, img_file = None):
     import shutil
 
     try:
+        if not img_file:
+            img_file = tempfile.mktemp(suffix=".jpg")
+            im_w, im_h = 4056/2, 3040/2
+
+            command = f"/opt/vc/bin/raspistill -t 1000 -h {im_h} -w  {im_w} --quality 100  --sharpness -50 " \
+                      f"--contrast 75 --saturation -100  --roi \"0.1, 0.1, 0.8, 0.8\" -o {img_file} "
+            os.system(command)
+
         logging.info(f"Looking for QR code to connect to wifi")
         decoded = subprocess.check_output(f"zbarimg  --set *.disable --set qrcode.enable  --set x-density=2 --set y-density=2  {img_file} -q", shell=True, universal_newlines=True)
 
@@ -176,36 +187,26 @@ def set_wifi_from_qr(persistent_dir, img_file = None):
             if not ip:
                 logging.error("Trying direct connection though QR code, but failed! Not trying other methods")
                 exit(1)
+            logging.info(f"Pairing with temporary network: {fields['S']}")
             return ip
 
+        tmp_cfg_file = os.path.join(persistent_dir, f'{fields["S"]}.conf.tmp')
+        cfg_file = os.path.join(persistent_dir, f'{fields["S"]}.conf')
         try:
-            #we try to append credentials to our config AND to load it. we only keep it if we get an IP
-            tmp_cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf.tmp')
-            cfg_file = os.path.join(persistent_dir, 'qr_wpa_supplicant.conf')
-            if not os.path.isfile(cfg_file):
-                with open(cfg_file, 'w') as f:
-                    f.write("ctrl_interface=DIR=/var/run/wpa_supplicant\n")
+            os.system(f"wpa_passphrase {fields['S']} {fields['P']} > {tmp_cfg_file}")
 
-            shutil.copyfile(cfg_file, tmp_cfg_file)
-
-            # looks if same ssid in the config file. if ssid exist we don't append any data and return no ip
-            # the parent script then falls back on persistent networks
-            if is_ssid_in_wpa_conf(fields['S'], cfg_file):
-                logging.error(f"SSID `{fields['S']}` already registered. This would be a duplicate")
-                return ""
-
-            os.system(f"wpa_passphrase {fields['S']} {fields['P']} >> {tmp_cfg_file}")
-
-            ip = set_wpa(5, persistent_dir, tmp_cfg_file)
+            ip = set_wpa(5, persistent_dir, [tmp_cfg_file])
             if ip:
-                shutil.copyfile(tmp_cfg_file, cfg_file)
+                logging.info(f"Pairing with new network: {fields['S']}")
+                shutil.move(tmp_cfg_file, cfg_file)
+
                 return ip
         finally:
-            os.remove(tmp_cfg_file)
-
+            if os.path.exists(tmp_cfg_file):
+                os.remove(tmp_cfg_file)
         time.sleep(1)
 
-    except AssertionError:
+    except AssertionError as e:
         logging.error(f"Assertion process error {e}")
         return ""
     except subprocess.CalledProcessError as e:

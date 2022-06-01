@@ -164,36 +164,42 @@ if __name__ == '__main__':
             SPI_FLASH_GPIO = int(os.environ["SPI_FLASH_GPIO"])
             SPI_REF_EXPOSURE_TIME = int(os.environ["SPI_REF_EXPOSURE_TIME"])
             GPIO.setup(SPI_FLASH_GPIO, GPIO.OUT)  # set a port/pin as an output
-            # SPI_TESTING_GPIO = int(os.environ["SPI_TESTING_GPIO"])
-            # GPIO.setup(SPI_TESTING_GPIO, GPIO.IN)  # set a port/pin as an output
+            SPI_TESTING_GPIO = int(os.environ["SPI_TESTING_GPIO"])
+            GPIO.setup(SPI_TESTING_GPIO, GPIO.IN)  # set a port/pin as an output
             GPIO.output(SPI_FLASH_GPIO, 1)
             while not done:
+                testing_bridge = GPIO.input(SPI_TESTING_GPIO)
                 camera.start_preview()
                 time.sleep(4)
                 camera.capture(tmp_image, quality = 95)
                 camera.stop_preview()
                 et = camera.exposure_speed / 1000
-                logging.info(f"Set focus and adjust aperture until exposure time is ~{SPI_REF_EXPOSURE_TIME / 1000} ms")
-                logging.info(f"Exposure time: {et} ms")
+                if testing_bridge:
+                    logging.info(f"Set focus and adjust aperture until exposure time is ~{SPI_REF_EXPOSURE_TIME / 1000} ms")
+                    logging.info(f"Exposure time: {et} ms")
+                    logging.info("Take the testing bridge off to continue to device pairing")
+                    time.sleep(1)
+                else:
+                    logging.info("Put hotspot QR code in front of the camera")
+                    try:
+                        proc = subprocess.run(f"zbarimg  --set *.disable --set qrcode.enable  --set x-density=2 --set y-density=2  {tmp_image} -q",
+                                              shell=True,
+                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                              universal_newlines=True)
+                        decoded = proc.stdout
+                        error = proc.stderr
+                        proc.check_returncode()
+                        if not no_qr_code_at_least_once:
+                            logging.warning(
+                                "QR code cannot be the first image. Put QR code only in the end of the focus process.")
+                        else:
+                            done = True
 
-                try:
-
-                    proc = subprocess.run(f"zbarimg  --set *.disable --set qrcode.enable  --set x-density=2 --set y-density=2  {tmp_image} -q",
-                                          shell=True,
-                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                          universal_newlines=True)
-                    decoded = proc.stdout
-                    error = proc.stderr
-                    proc.check_returncode()
-                    if not no_qr_code_at_least_once:
-                        logging.warning(
-                            "QR code cannot be the first image. Put QR code only in the end of the focus process.")
-                    else:
-                        done = True
-                except subprocess.CalledProcessError as e:
-                    logging.info("No QR code in image. Continuing...")
-                    logging.info(error)
-                    no_qr_code_at_least_once = True
+                    except subprocess.CalledProcessError as e:
+                        logging.info("No QR code in image. Continuing...")
+                        if error:
+                            logging.info(error)
+                        no_qr_code_at_least_once = True
 
         finally:
             camera.stop_preview()

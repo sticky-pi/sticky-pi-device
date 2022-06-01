@@ -77,7 +77,7 @@ class S(BaseHTTPRequestHandler):
 
     def _json(self, message):
         """This just generates an HTML document that includes `message`
-        in the body. Override, or re-write this do do more interesting stuff.
+        in the body. Override, or re-write this to do more interesting stuff.
         """
         content = json.dumps(message)
         return content.encode("utf8")  # NOTE: must return a bytes object!
@@ -235,11 +235,14 @@ class S(BaseHTTPRequestHandler):
         # should not be any , but remove them if the exist
         temp_files = []
 
-        for g in sorted(glob.glob(os.path.join(self._config.SPI_IMAGE_DIR, '**', '*.jpg*'))):
-            if g.endswith("~"):
-                temp_files.append(g)
-            elif g.endswith(".jpg"):
-                all_files.append(g)
+        for h in sorted(glob.glob(os.path.join(self._config.SPI_IMAGE_DIR, self._dev_id, "*"))):
+            if not os.path.isdir(h):
+                continue
+            for g in sorted(glob.glob(os.path.join(h, '*.jpg*'))):
+                if g.endswith("~"):
+                    temp_files.append(g)
+                elif g.endswith(".jpg"):
+                    all_files.append(g)
 
         # remove all but last temp files, in case
         for r in temp_files[0: -1]:

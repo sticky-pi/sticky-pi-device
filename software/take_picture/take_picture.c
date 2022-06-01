@@ -1505,17 +1505,17 @@ error:
 
     if(was_turned_on_by_button){
         logging("Device manually turned on");
-        char qr_filename_buffer[128] = "/tmp/qr.jpg";
-
-        char command_buffer[256] = "";
-        snprintf(command_buffer, 256,
-                                "/opt/vc/bin/raspistill -t 1000 -h %i -w  %i --quality 100  --sharpness -50 --contrast 75 --saturation -100  --roi \"0.1, 0.1, 0.8, 0.8\" -o %s",
-                                atoi(SPI_IM_H) / 2,
-                                atoi(SPI_IM_W) / 2,
-                                qr_filename_buffer);
-        logging("Running `%s`", command_buffer);
-        system(command_buffer);
-        strncpy(filename, qr_filename_buffer, 128);
+//        char qr_filename_buffer[128] = "/tmp/qr.jpg";
+//
+//        char command_buffer[256] = "";
+//        snprintf(command_buffer, 256,
+//                                "/opt/vc/bin/raspistill -t 1000 -h %i -w  %i --quality 100  --sharpness -50 --contrast 75 --saturation -100  --roi \"0.1, 0.1, 0.8, 0.8\" -o %s",
+//                                atoi(SPI_IM_H) / 2,
+//                                atoi(SPI_IM_W) / 2,
+//                                qr_filename_buffer);
+//        logging("Running `%s`", command_buffer);
+//        system(command_buffer);
+//        strncpy(filename, qr_filename_buffer, 128);
         strcpy(flag,"-u");
     }
     else if(periodic_sync_attempt){
@@ -1527,7 +1527,7 @@ error:
         logging("Not syncing");
         }
 
-    sprintf(command_buffer, "%s -b %i %s -q %s 2>&1", "sync_to_harvester.py", state.bat, flag, filename);
+    sprintf(command_buffer, "%s -b %i %s  2>&1", "sync_to_harvester.py", state.bat, flag);
 
     if(strlen(flag) >0)
         system(command_buffer);

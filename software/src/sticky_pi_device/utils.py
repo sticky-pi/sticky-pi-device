@@ -77,21 +77,30 @@ def set_wifi(interface="wlan0"):
 def set_wpa(wpa_timeout, persistent_dir, additional_configs = None, dhc_only=False):
 
     if not dhc_only:
+        logging.info(f"Restarting  wpa_supplicant.")
+        os.system(f"pkill wpa_supplicant")
+
         sys_config_file = '/etc/wpa_supplicant/wpa_supplicant.conf'
 
         if additional_configs is None:
             additional_configs = [f for f in sorted(glob.glob(os.path.join(persistent_dir, '*.conf')))]
 
-        logging.info(f"Restarting  wpa_supplicant.")
-        os.system(f"pkill wpa_supplicant")
+
 
         additional_config_cmd = ""
-        for conf in additional_configs:
-            if os.path.exists(conf):
-                additional_config_cmd += f" -I{conf}"
-            else:
-                logging.warning(f"no such file {conf}")
+        concatenated_config = tempfile.mktemp(suffix=".conf")
+        with open(concatenated_config, "w") as conf_file:
+            conf_file.write("ctrl_interface=DIR=/var/run/wpa_supplicant\n")
+            for conf in additional_configs:
+                if not os.path.exists(conf):
+                    logging.warning(f"no such file {conf}")
+                    continue
+                with open(conf, "r") as f:
+                    for line in f:
+                        if not line.startswith("ctrl_interface"):
+                            conf_file.write(line)
 
+        additional_config_cmd += f" -I{concatenated_config}"
         time.sleep(5)
 
         os.system(f"wpa_supplicant -iwlan0  -B -Dnl80211 -c{sys_config_file} {additional_config_cmd}")

@@ -121,7 +121,7 @@ if __name__ == '__main__':
         set_wifi()
 
         ip = None
-        
+
         if option_dict["qr_code_file"] is None:
             logging.info("Trying to connect to pre-paired networks")
             ip = set_wpa(WPA_TIMEOUT, tmp_mount)

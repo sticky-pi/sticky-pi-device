@@ -10,8 +10,8 @@ Instructions to assemble Sticky Pis are available on [our documentation](https:/
 ### `hardware/`
 
 * `BOM.csv` -- up-to-date Bill Of Materials (list all the parts, provider, price,...)
-* `main.fzz` -- Fritzing circuit board for the custom PCB
-* `parts/` -- 3d parts STL snapshots (and gcodes) from our [Onshape repository](https://cad.onshape.com/documents/73922dc6e3c6d7006b309c14/w/7e4fb88a2e93b6adba33fd5a/e/438cef0dea4f2cfe3bf83d91)
+* `sticky_pi_hat/` -- the custom electronic circuit files  
+* `CAD/` -- 3d parts STL snapshots from our [Onshape repository](https://cad.onshape.com/documents/73922dc6e3c6d7006b309c14/w/7e4fb88a2e93b6adba33fd5a/e/438cef0dea4f2cfe3bf83d91)
 
 
 ### `software/` 

@@ -1,3 +1,0 @@
-(sym_lib_table
-  (lib (name 3001)(type Legacy)(uri /home/quentin/repos/sticky-pi/sticky-pi-device-git/hardware/sticky_pi_hat/MCP3001/eec.lib)(options "")(descr 3001))
-)

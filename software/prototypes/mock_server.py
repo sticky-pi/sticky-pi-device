@@ -1,26 +1,21 @@
 #!/bin/python
+
 import shutil
 import tempfile
-from optparse import OptionParser
-import subprocess
 import os
-import re
 import logging
 import socket
-import fcntl
-import struct
 import time
 import threading
-import netifaces
 import contextlib
-from sticky_pi_device.utils import device_id, get_ip_address, set_wpa, set_direct_wifi_connection
+from sticky_pi_device.utils import get_ip_address
 import uvicorn
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
+from sticky_pi_device.sync_server import CustomServer
 
+# IFNAME= "wlp0s20f3"
+IFNAME = "enp0s20f0u2"
 
-IFNAME= "wlp0s20f3"
-#IFNAME = "enp0s20f0u2"
-USE_DIRECT_WIFI = False
 CURRENT_BATTERY_LEVEL = "0"
 SPI_DRIVE_LABEL = "spi-drive"
 SPI_LOG_FILENAME = "test.log"
@@ -30,17 +25,6 @@ SPI_HARVESTER_NAME_PATTERN = "spi-harvester"
 FIND_HARVESTER_TIMEOUT = 10  # s
 PING_HARVESTER_TIMEOUT = 20  # s
 WPA_TIMEOUT = 5  # s
-DEFAULT_P2P_CONFIG_FILE = """
-ctrl_interface=DIR=/var/run/wpa_supplicant
-driver_param=use_p2p_group_interface=1
-persistent_reconnect=1
-device_name=DIRECT-sticky-pi
-device_type=6-0050F204-1
-config_methods=virtual_push_button
-p2p_go_intent=0
-p2p_go_ht40=1
-country=US
-"""
 
 
 class ConfigHandler(dict):
@@ -86,28 +70,27 @@ class MockDevice(Process):
         self._device_name = device_name
         self._ip = ip_addr
         self._to_stop = False
-        from sticky_pi_device.sync_server import CustomServer
         self._server = CustomServer("0.0.0.0", self._port)
 
-    def _make_dummy_images(self, n=(8,20)):
+    def _make_dummy_images(self, n=(100, 300)):
         import datetime
         import random
         from PIL import Image
 
         target = os.path.join(SPI_IMAGE_DIR, self._device_name)
+
         for i in range(int(random.uniform(*n))):
             timestamp = round(random.uniform(1.6e9, 1.7e9))
             dt = datetime.datetime.fromtimestamp(timestamp)
             filename = f'{self._device_name}.{dt.strftime("%Y-%m-%d_%H-%M-%S")}.jpg'
-            path = os.path.join(target, filename)
-
+            path = os.path.join(target, dt.strftime("%Y-%m-%d"), filename)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
 
             width, height = 1600, 1200
             valid_solid_color_jpeg = Image.new(mode='RGB', size=(width, height),
                                                color=tuple([int(random.uniform(0,255)) for i in range(3)]))
             valid_solid_color_jpeg.save(path)
-            # with open(path, 'wb') as f:
-            #     f.write(os.urandom(1024 * 1024))
+
 
     def run(self) -> None:
         import random
@@ -124,7 +107,7 @@ class MockDevice(Process):
             properties=desc,
             server=f"spi-{self._device_name}.local.",
         )
-        SPI_VERSION = "1"
+        SPI_VERSION = "3.1.0"
         SPI_DEVICE_SERVER_PACEMAKER_FILE = os.path.join(SPI_IMAGE_DIR, self._device_name, "pacemaker.pcmk")
 
         zeroconf = Zeroconf(ip_version=ip_version)
@@ -144,6 +127,8 @@ class MockDevice(Process):
         print(os.environ['CURRENT_BATTERY_LEVEL'])
 
         logfile = os.path.join(SPI_IMAGE_DIR, os.environ['SPI_LOG_FILENAME'])
+
+
         with open(logfile, 'w') as f:
             for i in range(100):
                 f.write(f"some line for my dummy log file, {i}")
@@ -204,21 +189,16 @@ if __name__ == '__main__':
         logger = logging.getLogger()
         logger.setLevel(logging.INFO)
         os.makedirs(SPI_IMAGE_DIR, exist_ok=True)
-        if USE_DIRECT_WIFI:
-            ip = set_direct_wifi_connection(SPI_IMAGE_DIR, DEFAULT_P2P_CONFIG_FILE, PING_HARVESTER_TIMEOUT,
-                                            SPI_HARVESTER_NAME_PATTERN, FIND_HARVESTER_TIMEOUT,
-                                            interface=IFNAME)
-        else:
-            ip = get_ip_address(IFNAME)
+        ip = get_ip_address(IFNAME)
 
         if i:
             dev = [MockDevice(8080 + i, "%08d" %i , ip)]
         else:
             dev = [
-                MockDevice(8081, "00000001", ip),
+                # MockDevice(8081, "00000001", ip),
                 # MockDevice(8082, "00000002", ip),
                 # MockDevice(8083, "00000003", ip),
-                # MockDevice(8084, "00000004", ip),
+                MockDevice(8084, "00000004", ip),
                 # MockDevice(8085, "00000005", ip),
                 # MockDevice(8086, "00000006", ip),
                 # MockDevice(8087, "00000007", ip),

@@ -132,3 +132,4 @@ dmypy.json
 *.iso
 *.tar.gz
 .idea/
+wpa_supplicant.conf

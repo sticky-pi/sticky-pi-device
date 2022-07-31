@@ -17,12 +17,23 @@ n
 p
 2
 
-+3G
++4G
+n
+p
+3
+
++100M
 w
 EOF
 
 mkfs.vfat ${DEV}p1
+# root partition
 mkfs.ext4 ${DEV}p2
+e2label ${DEV}p2 SPI_ROOT
+
+# small persistent partition for saving e.g. bluetooth paired device wpa_config
+mkfs.ext4 ${DEV}p3
+e2label ${DEV}p3 ${SPI_PERSISTENT_PARTITION_LABEL}
 
 mkdir -p $MOUNT_DIR/boot
 mkdir -p $MOUNT_DIR/root

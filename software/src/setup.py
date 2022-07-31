@@ -8,20 +8,15 @@ setup(
     version=__version__,
     long_description=__doc__,
     packages=find_packages(),
-    scripts=['bin/take_picture.py'],
+    scripts=['bin/sync_to_harvester.py', 'bin/flash_blink.py', 'bin/test_routine.py', 'bin/set_time_from_api_net.py'],
     include_package_data=True,
     zip_safe=False,
     install_requires=['rpi_ws281x',
                       'pytz',
                       'netifaces',
                       'requests',
-                      'piexif',
-    ],
-    extras_require={
-        'device': ['pyserial',
-                  'RPi.GPIO',
-                  'picamera',
-                  'Adafruit_DHT'],
-        'devel': ['pillow']
-    },
+                      'RPi.GPIO',
+                      "zeroconf",
+                      "netifaces"
+                      ]
 )

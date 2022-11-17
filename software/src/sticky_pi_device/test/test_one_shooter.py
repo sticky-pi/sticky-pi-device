@@ -15,9 +15,13 @@ sys.modules['picamera'] = Mock()
 sys.modules['Adafruit_DHT'] = Mock()
 sys.modules['RPi'] = Mock()
 sys.modules['RPi.GPIO'] = Mock()
+
+import dotenv
 from sticky_pi_device.config_handler import ConfigHandler
 from sticky_pi_device.one_shooter import PiOneShooter
 
+
+dotenv.load_dotenv("./testing.env")
 
 # logging.basicConfig(format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
 #                     datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
@@ -131,8 +135,6 @@ class DummyOneShooter(PiOneShooter):
         self._test_light_sensor = test_light_sensor
         self._camera = None
 
-
-
     def power_off(self):
         logging.info("Powering device off")
 
@@ -173,7 +175,6 @@ class TestOneShooter(TestCase):
         os.environ['SPI_IMAGE_DIR'] = self._spi_img_dir
         os.environ['SPI_HARVESTER_HOSTNAME'] = 'harvester_api'
         try:
-
             c = ConfigHandler()
             metadata_file = os.path.join(c.SPI_IMAGE_DIR, c.SPI_METADATA_FILENAME)
             init_metadata = {"lat": 0,
@@ -183,9 +184,11 @@ class TestOneShooter(TestCase):
                 json.dump(init_metadata, f)
 
             a = DummyOneShooter(c)
+            a.shoot(no_save=True)
             a.shoot()
             a.shoot()
             a.shoot()
+
 
         finally:
             if del_img_dir:

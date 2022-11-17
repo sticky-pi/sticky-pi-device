@@ -302,7 +302,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -340,7 +340,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -446,7 +446,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -484,7 +484,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -588,7 +588,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -729,7 +729,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -767,7 +767,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -878,7 +878,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -916,7 +916,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -1033,7 +1033,7 @@
             pin@p133 { function = "output"; termination = "no_pulling"; }; // Camera LED
             pin@p134 { function = "output"; termination = "no_pulling"; }; // Camera shutdown
             pin@p135 { function = "input";  termination = "no_pulling"; polarity = "active_low"; }; // Power low
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -1071,7 +1071,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -1203,7 +1203,7 @@
             pin@p133 { function = "output"; termination = "no_pulling"; }; // Camera shutdown
             pin@p134 { function = "output"; termination = "no_pulling"; }; // Camera LED
             pin@p135 { function = "input";  termination = "no_pulling"; polarity = "active_low"; }; // Power low
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -1241,7 +1241,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -1373,7 +1373,7 @@
             pin@p131 { function = "output"; termination = "no_pulling"; startup_state = "active"; }; // LAN_RUN
             pin@p133 { function = "output"; termination = "no_pulling"; }; // Camera shutdown
             pin@p134 { function = "output"; termination = "no_pulling"; }; // Camera LED
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -1411,7 +1411,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -1544,7 +1544,7 @@
             pin@p130 { function = "output"; termination = "no_pulling"; polarity = "active_low"; startup_state = "active"; }; // PWR_LED (RED)
             pin@p133 { function = "output"; termination = "no_pulling"; }; // Camera shutdown
             pin@p134 { function = "output"; termination = "no_pulling"; }; // Camera LED
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -1582,7 +1582,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -1697,7 +1697,7 @@
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
             pin@p128 { function = "input";  termination = "no_pulling"; polarity = "active_low"; }; // Hotplug
             pin@p129 { function = "output"; termination = "no_pulling"; polarity = "active_low"; }; // EMMC_ENABLE_N
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -1785,7 +1785,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -1823,7 +1823,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -1922,7 +1922,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -1960,7 +1960,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
@@ -2057,7 +2057,7 @@
             pin@p51 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D1
             pin@p52 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D2
             pin@p53 { function = "sdcard"; termination = "pull_up";    drive_strength_mA = < 8 >; }; // SD D3
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -2145,7 +2145,7 @@
             pin@p130 { function = "output"; termination = "no_pulling"; polarity = "active_low"; startup_state = "active"; }; // PWR_LED (RED)
             pin@p132 { function = "output"; termination = "no_pulling"; }; // SD VDDIO
             pin@p133 { function = "output"; termination = "no_pulling"; }; // Camera shutdown
-            pin@p19 { function = "output"; termination = "pull_down"; };
+            pin@p<SPI_FLASH_GPIO> { function = "output"; termination = "pull_down"; };
          }; // pin_config
 
          pin_defines {
@@ -2184,7 +2184,7 @@
             };
             pin_define@FLASH_0_ENABLE {
                 type = "internal";
-                number = <19>;
+                number = <<SPI_FLASH_GPIO>>;
             };
             pin_define@FLASH_0_INDICATOR {
                type = "absent";
